@@ -33,7 +33,7 @@ class User:
 
             if user_input == '':  # hit enter for last op
                 if num_inputs == 0:  # unless we need an answer
-                    self.just_print_i(Output.no_empty_o[self.lang])
+                    self.just_print_i(Output.no_empty_o)
                     continue
                 # if they ask for another random day at start, no change
                 elif cur_pos == '_':

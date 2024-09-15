@@ -1,4 +1,4 @@
-import pyperclip # copy to clipboard
+# import pyperclip # copy to clipboard
 import random as rand
 
 from user import User
@@ -23,7 +23,10 @@ while True:
     if cur_pos == '':  # end program
         userer.just_print_i(Output.afscheid_o, 1)
         break
-    elif cur_pos == '_':
+    # _2 and _ are the same so just handle it in _
+    elif cur_pos == '_2':
+        cur_pos = '_'
+    if cur_pos == '_':
         # no ptrs have been written
         if sorter.has_ptrs:
             # don't show days with no ptrs written
@@ -62,7 +65,4 @@ while True:
 
         sorter.days[day].print_all_ptrs(userer.lang)  # show day
 
-
     cur_pos = userer.input_handler(Output.all_pos_o[cur_pos], cur_pos)  # take input
-
-

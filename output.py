@@ -11,8 +11,8 @@ class Output:
                           '<no ptrs en este dia>'
                           '<geen ptrs op deze dag>']
     empty_comp_o: list[str] = ['add ptrs to be shown a random day',
-                          'agrega algunos ptrs para ver un dia aleatario'
-                          'voeg wat ptrs toe om een willekeurige dag te zien']
+                               'agrega algunos ptrs para ver un dia aleatario',
+                               'voeg wat ptrs toe om een willekeurige dag te zien']
     no_empty_o: list[str] = ['i need an answer', 'necesito respuesta', 'ik heb een antwoord nodig']
     invalid_o: list[str] = ['invalid input. type the # that corresponds with what you wanna do',
                             'entrada invalida. pon el numero que corresponde con lo que quieres hacer',
@@ -52,4 +52,3 @@ class Output:
         '_1': pos_o_1,
         '_10': pos_o_10,
         '_11': pos_o_11}
-
