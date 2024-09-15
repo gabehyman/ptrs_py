@@ -43,17 +43,22 @@ while True:
             userer.just_print_i(Output.empty_comp_o)
 
     elif cur_pos == '_0':
-        day = len(sorter.days) - 1
+        if not sorter.has_ptrs:
+            day = len(sorter.days) - 1  # show last day if no ptrs written
+        else:
+            # get last day with ptrs
+            for i in reversed(range(len(sorter.days))):
+                if sorter.days[i].has_ptrs():
+                    day = i
+                    break
 
         sorter.days[day].print_all_ptrs(userer.lang)  # show day
-    elif cur_pos == '_1':
+    # elif cur_pos == '_1': just printing
         # enter search
-        day
-    # dont need '_2' as it just stays '_'
+    # elif cur_pos == '_2': not needed as we handle with '_'
 
-    elif cur_pos == '_00':
+    # elif cur_pos == '_00': just printing
         # enter edit
-        day
     elif cur_pos == '_01':
         day += (day + 1) % len(sorter.days)
         cur_pos = userer.pos_handler(cur_pos, '-1')
