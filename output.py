@@ -1,6 +1,9 @@
 class Output:
     # outputs
     divider_o: str = '---------------------------------------'
+    welcome_new_o: list[str] = ['welcome, ',
+                                'bienvenido, ',
+                                'welkom, ']
     welcome_o: list[str] = ['welcome back, ',
                             'bienvenido de vuelta, ',
                             'welkom terug, ']
@@ -20,8 +23,10 @@ class Output:
 
     # prompts
     # _o[-1] = num options OR if = 0 then there needs to be a response
-    # if _o[-1] = 0, then _o[-2] = num options to check range of answer
-    # if _o[-2] = -1, then any answer is accepted
+    # _o[-1] = -1 -> can just write ptrs but can also pick option
+    # if _o[-1] = 0 -> then _o[-2] = num options to check range of answer
+    # if _o[-2] = -1 -> any answer is accepted (no always ops available)
+    # if _o[-2] = -2 -> any answer is accepted (always ops available)
     language_o: list[str] = ['0 = english | 1 = espanol | 2 = nederlands.', '3', '0']
     name_o: list[str] = ['what\'s your name?', '¿como se llama?', 'hoe heet u?', '-1', '0']
     looking_at_day_o: list[str] = ['type to add new ptr(s) |\n0 = edit | 1 = previous day | 2 = next day.',
@@ -41,10 +46,14 @@ class Output:
                            'entra fecha (12abc34 - 56def78) |\n0 = aleatoria.',
                            'geef datum (12abc34 - 56def78) |\n0 = willkeurige.',
                            '1', '-1']
-    pos_o_11: list[str] = ['0 = continuous | 1 = exact | 2 = all | 3 = any',
-                           '0 = continuo | 1 = exacto | 2 = todas | 3 = cualquier',
-                           '0 = continu | 1 = precies | 2 = allen | 3 = elke',
+    pos_o_11: list[str] = ['0 = continuous | 1 = exact | 2 = all | 3 = any.',
+                           '0 = continuo | 1 = exacto | 2 = todas | 3 = cualquier.',
+                           '0 = continu | 1 = precies | 2 = allen | 3 = elke.',
                            '4']
+    pos_o_110: list[str] = ['type what you want to search.',
+                            'entra lo que quiere buscar.',
+                            'geef wat u wilt zoeken.',
+                            '-1', '0']
 
     all_pos_o: dict[str, list[str]] = {
         '_': pos_o_,
