@@ -1,5 +1,8 @@
 from output import Output
 
+from datetime import datetime, timedelta
+
+
 class Day:
     days_of_week: list[list[str]] = [['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
                                      ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'],
@@ -13,9 +16,6 @@ class Day:
          'december']]
 
     def __init__(self, ptr):
-        self.day: int = 0
-        self.month: int = 0
-        self.year: int = 0
         self.ptrs = []
 
         self.max_width = 100
@@ -24,19 +24,13 @@ class Day:
 
         # split into each word
         words = ptr.split()
+        date = words.pop(0).split('/')
 
-        self.day = int(words.pop(0))
-
-        month_s = words.pop(0)[:-1]
-
-        # check all langs, maybe ptrs in diff lang than ui
-        # dev purposes??
-        for month_lang in self.months:
-            if month_s in month_lang:
-                self.month = int(month_lang.index(month_s))
-                break
-
-        self.year = int(words.pop(0))
+        self.day = int(date[0])
+        self.month = int(date[1])
+        self.year = int(date[2])
+        self.date_obj = datetime(self.year, self.month, self.day)
+        self.day_of_week = self.date_obj.weekday()
 
         # get rid of ::
         words.pop(0)
@@ -59,7 +53,7 @@ class Day:
     # print date info nicely
     def print_date(self, lang: int):
         print(
-            f'({self.days_of_week[lang][self.getDayOfWeek()]}) {self.day} {self.months[lang][self.month]}, {self.year}:')
+            f'({self.days_of_week[lang][self.day_of_week]}) {self.day} {self.months[lang][self.month]}, {self.year}:')
 
     def has_ptrs(self):
         return self.ptrs
@@ -117,13 +111,49 @@ class Day:
 
         return long_token, indent
 
-    def getDayOfWeek(self):
-        # zeller's congruence
-        k = self.year % 100
-        j = self.year // 100
-        h = (self.day + ((13 * (self.zeller_month(self.month) + 1)) // 5) + k + k // 4 + j // 4 + 5 * j)
+    @staticmethod
+    def get_dates_around_today(delta):
+        current_date = datetime.now()
+        date = current_date + timedelta(days=delta)
+        return date.day, date.month, date.year
 
-        return ((h % 7) + 5) % 7  # have it match with mon - sun indexing
+    @staticmethod
+    def make_date(day, month, year):
+        try:
+            return datetime(int(year), int(month), int(day))
+        except ValueError:
+            # if invalid date return date at beginning of time haha
+            return datetime(1, 1, 1)
 
-    def zeller_month(self, month_index):
-        return ((month_index + 1) + 9) % 12 + 3
+    @staticmethod
+    def get_index(start, end, day, month, year):
+        try:
+            comp_date = datetime(int(year), int(month), int(day))
+            if start.date_obj <= comp_date <= end.date_obj:
+                return (comp_date-start.date_obj).days
+            return -1
+        except ValueError:
+            # invalid date
+            return -1
+
+    # check if input is one of the months first three letters (english)
+    @staticmethod
+    def is_three_letter_month(mth: str) -> int:
+        counter = 1
+        if len(mth) == 3:
+            for month in Day.months[0]:
+                if mth == month[:3]:
+                    return counter
+                counter += 1
+        return -1
+
+    # check if input is one of the days of weeks first three letters (english)
+    @staticmethod
+    def is_three_letter_day(usr_day: str) -> int:
+        counter = 0
+        if len(usr_day) == 3:
+            for day in Day.days_of_week[0]:
+                if usr_day == day[:3]:
+                    return counter
+                counter += 1
+        return -1

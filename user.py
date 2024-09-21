@@ -1,7 +1,6 @@
 import os
 from day import Day
 from output import Output
-from datetime import datetime, timedelta
 
 
 def is_valid_range(user_input, num_inputs):
@@ -34,6 +33,8 @@ class User:
         return cur_pos + mod
 
     def input_handler(self, prompt: list[str], cur_pos: str = ''):
+        # keep track of non-positional returns
+        dum_out = ''
         num_inputs = int(prompt[-1])
         while True:
             user_input: str = input(prompt[self.lang] + '\n')
@@ -43,28 +44,32 @@ class User:
                 if num_inputs == 0:  # unless we need an answer
                     self.just_print(Output.no_empty_o)
                     continue
-                return self.pos_handler(cur_pos, str(num_inputs - 1))
+                return [self.pos_handler(cur_pos, str(num_inputs - 1)), dum_out]
 
             # num_inputs = 0 -> need non-empty answer
             # actual num of inputs then is 2nd to last option
             elif num_inputs == 0:
                 num_inputs = int(prompt[-2])
-                # always ops available
+                # always ops or valid range
                 if num_inputs == -2:
+                    # check always ops
                     pos_ret = self.find_always_op(user_input, cur_pos)
                     if pos_ret != '-1':
-                        return pos_ret
+                        return [pos_ret, dum_out]
+                    # check valid range
                     elif is_valid_range(user_input, num_inputs):
-                        return self.pos_handler(cur_pos, user_input)
-                # return user input (if valid)
-                elif (num_inputs == -1 or  # take any response
+                        return [self.pos_handler(cur_pos, user_input), dum_out]
+                    # if neither, return input
+                    return [cur_pos, user_input]
+                # return user input (if -1 (ie take anything) or in valid range)
+                elif (num_inputs == -1 or
                         is_valid_range(user_input, num_inputs)):
-                    return user_input.strip()
+                    return [cur_pos, user_input.strip()]
             else:
                 # check always ops
                 pos_ret = self.find_always_op(user_input, cur_pos)
                 if pos_ret != '-1':
-                    return pos_ret
+                    return [pos_ret, dum_out]
 
                 # num_inputs = -1 -> can just write ptrs but can also pick option
                 elif num_inputs == -1:
@@ -72,13 +77,13 @@ class User:
                     # check if valid op
                     num_inputs = int(prompt[-2])
                     if is_valid_range(user_input, num_inputs):
-                        return self.pos_handler(cur_pos, user_input)
+                        return [self.pos_handler(cur_pos, user_input), dum_out]
                     else:
-                        return user_input.strip()
+                        return [cur_pos, user_input.strip()]
 
                 # check valid op
                 elif is_valid_range(user_input, num_inputs):
-                    return self.pos_handler(cur_pos, user_input)
+                    return [self.pos_handler(cur_pos, user_input), dum_out]
 
             # no match, say invalid and re-run
             self.just_print(Output.invalid_o)
@@ -115,21 +120,19 @@ class User:
     def create_user(self):
         with open(self.user_path, 'w') as file:  # create user file
             # take language pref and write to file
-            self.lang = int(self.input_handler(Output.language_o))
+            self.lang = int(self.input_handler(Output.language_o)[1])
             file.write(str(self.lang) + '\n')
 
             # take name and write to file
-            self.name = self.input_handler(Output.name_o)
+            self.name = self.input_handler(Output.name_o)[1]
             file.write(self.name + '\n')
 
         with open(self.ptrs_path, 'w') as file:  # create file
             # create ptrs file with 20 days both in past and future
-            current_date = datetime.now()
             back_forth = 20
             for i in range(-back_forth, back_forth):
-                date = current_date + timedelta(days=i)
-                month = Day.months[self.lang][date.month - 1]
-                file.write(f'{date.day} {month}, {date.year} ::  \t\n')
+                day, month, year = Day.get_dates_around_today(i)
+                file.write(f'{day}/{month}/{year} ::  \t\n')
 
     def just_print(self, output_all, with_name: bool = False, with_div: bool = False):
         printer = output_all[self.lang]
@@ -145,7 +148,8 @@ class User:
         if with_div:
             print(f'{Output.divider_o}\n')
 
-    def get_cur_pos(self, pos, outputter):
-        cur_pos = 'pos_o' + pos
-
-        return getattr(outputter, cur_pos)
+    def repeat_prompt(self, pos):
+        trunc_pos = pos[:-1]
+        if trunc_pos in []: # Output.same_prompt:
+            return trunc_pos + 'x'
+        return pos
