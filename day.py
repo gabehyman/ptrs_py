@@ -131,10 +131,9 @@ class Day:
             comp_date = datetime(int(year), int(month), int(day))
             if start.date_obj <= comp_date <= end.date_obj:
                 return (comp_date-start.date_obj).days
-            return -1
+            return -2  # date out of range of ptrs
         except ValueError:
-            # invalid date
-            return -1
+            return -3  # invalid date
 
     # check if input is one of the months first three letters (english)
     @staticmethod

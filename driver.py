@@ -19,33 +19,40 @@ day = 0
 while True:
     show_day = True  # will show day if not modified
 
+    # end program
     if cur_pos == '':
-        # end program
-        userer.just_print(Output.afscheid_o, True, True)
+        userer.just_print(Output.afscheid_o, userer.name, True)
         break
 
+    # _2 and _ are the same so just handle it in _
     elif cur_pos == '_2':
-        # _2 and _ are the same so just handle it in _
         cur_pos = '_'
+    # show random day
     if cur_pos == '_':
-        # show random day
         day = sorter.get_rand_day()
         if day == -1:
             userer.just_print(Output.empty_comp_o)
             show_day = False
 
+    # enter write and show last day
     elif cur_pos == '_0':
-        # enter write and show last day
         day = sorter.get_last_day()
+    # search
     elif cur_pos == '_1':
-        # search
-        # prompt search if no output
+        # just prompt search if no output (i.e first round)
         if not cur_out:
             show_day = False
-        # conduct search with output
+
+        # process search with output
         else:
-            sorter.determine_search(cur_out)
-            show_day = True
+            search_params = sorter.determine_search(cur_out)
+            if len(search_params) < 4:
+                addendum = userer.search_error_addendum(search_params)
+
+                userer.just_print(Output.invalid_search_o, addendum)
+                show_day = False
+            else:
+                show_day = True
 
     elif cur_pos == '_00':
         # enter edit

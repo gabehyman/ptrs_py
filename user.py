@@ -40,6 +40,8 @@ class User:
             user_input: str = input(prompt[self.lang] + '\n')
             print()  # extra line below answer
 
+            # remove empty spaces
+            user_input = user_input.strip()
             if user_input == '':  # hit enter for last op
                 if num_inputs == 0:  # unless we need an answer
                     self.just_print(Output.no_empty_o)
@@ -104,7 +106,7 @@ class User:
         user_path = wd + '/user.txt'
         if not (os.path.exists(user_path)):
             self.create_user()
-            self.just_print(Output.welcome_new_o, True, True)
+            self.just_print(Output.welcome_new_o, self.name, True)
             return
 
         info = []
@@ -115,7 +117,7 @@ class User:
         self.lang = int(info[0])
         self.name = info[1]
 
-        self.just_print(Output.welcome_o, True, True)
+        self.just_print(Output.welcome_o, self.name, True)
 
     def create_user(self):
         with open(self.user_path, 'w') as file:  # create user file
@@ -134,13 +136,8 @@ class User:
                 day, month, year = Day.get_dates_around_today(i)
                 file.write(f'{day}/{month}/{year} ::  \t\n')
 
-    def just_print(self, output_all, with_name: bool = False, with_div: bool = False):
-        printer = output_all[self.lang]
-
-        if with_name:
-            printer += self.name
-
-        printer += '.'
+    def just_print(self, output_all, addendum: str = '', with_div: bool = False):
+        printer = output_all[self.lang] + addendum + '.'
 
         if with_div:
             print(f'\n{Output.divider_o}')
@@ -153,3 +150,14 @@ class User:
         if trunc_pos in []: # Output.same_prompt:
             return trunc_pos + 'x'
         return pos
+
+    def get_lang_spec_output(self, output_all):
+        return output_all[self.lang]
+
+    def search_error_addendum(self, search_params):
+        if search_params[0] == '-1':
+            return self.get_lang_spec_output(Output.syntax_error_o) + search_params[1]
+        elif search_params[0] == '-2':
+            return self.get_lang_spec_output(Output.date_range_error_o)
+        elif search_params[0] == '-3':
+            return self.get_lang_spec_output(Output.date_error_o)

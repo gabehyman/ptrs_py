@@ -1,7 +1,19 @@
+from typing import List, Any
+
 from day import Day
 
 import random as rand
 import datetime
+
+
+def check_date_validity_return(ret, dtm):
+    if ret == -1:
+        return ['-1', f'\"{dtm}\"']
+    elif ret == -2:
+        return ['-2']
+
+    return ['-3']
+
 
 class Sort:
 
@@ -51,15 +63,17 @@ class Sort:
 
     def determine_search(self, words):
         ind_words = words.split()
-        searches = []
+        searches: list[str | Any] = []
         num_words = len(ind_words)
 
         # default search params
         # search all days
         start = 0
         end = self.num_days
-        lvl = 1  # search whole day for words
-        ctxt = 1  # num of ptrs b4 and after hit
+        # ind date search
+        only = []
+        level = 1  # search whole day for words
+        context = 1  # num of ptrs b4 and after hit
 
         # search keywords
         dtm = 'dtm:'
@@ -85,7 +99,7 @@ class Sort:
                     clause += word + ' '
 
                     # if last word
-                    if i == num_words-1:
+                    if i == num_words - 1:
                         break
                     # remove trailing "
                     elif word[-1] == '\"':
@@ -103,26 +117,27 @@ class Sort:
                     # range search
                     if '-' in word:
                         dtm_range = dtm_search.split('-')
-                        if len(dtm_range) != 2:
-                            return ['', f'\"{dtm}\".']
+                        start_range = -1
+                        # only change start range from -1 (syntax error) if two elements
+                        if len(dtm_range) == 2:
+                            start_range = self.convert_date_to_index(dtm_range[0], True, True)[0]
 
-                        start_range = self.convert_date_to_index(dtm_range[0], True, True)
-                        if start_range != -1:
+                        if start_range >= 0:
                             start = start_range
                         else:
-                            return ['', f'\"{dtm}\".']
+                            return check_date_validity_return(start_range, dtm)
 
-                        end_range = self.convert_date_to_index(dtm_range[1], True)
-                        if start_range != -1:
+                        end_range = self.convert_date_to_index(dtm_range[1], True)[0]
+                        if end_range >= 0:
                             end = end_range
                         else:
-                            return ['', f'\"{dtm}\".']
+                            return check_date_validity_return(start_range, dtm)
 
                         add_clause = False
 
                     # not a range
                     else:
-                        print('not a range')
+                        only = self.convert_date_to_index(dtm_search)
 
                 # change level of search
                 elif word[:lvl_len] == lvl:
@@ -130,15 +145,15 @@ class Sort:
                         # all words have to be in one ptr
                         level = 0
                     elif word[lvl_len:] != '1':
-                        return ['', f'\"{lvl}\".']
+                        return ['', f'\"{lvl}\"']
 
                     add_clause = False
 
                 elif word[:ctxt_len] == ctxt:
                     if word[ctxt_len].isdigit():
-                        ctxt = int(word[ctxt_len:])
+                        context = int(word[ctxt_len:])
                     else:
-                        return ['', f'\"{ctxt}\".']
+                        return ['', f'\"{ctxt}\"']
 
                     add_clause = False
 
@@ -150,21 +165,21 @@ class Sort:
                 searches.append(clause)
             i += 1
 
-        searches = [start, end, lvl, ctxt] + searches
+        return [start, end, only, level, context] + searches
 
     def get_index_of_day(self, day, month, year):
-        return Day.get_index(self.days[0], self.days[self.num_days-1], day, month, year)
+        return Day.get_index(self.days[0], self.days[self.num_days - 1], day, month, year)
 
     def convert_date_to_index(self, date, is_range=False, is_start=False):
         if not date:  # empty
             if not is_range:
                 # can't give an empty date if not a range, so return -1 = error
-                return -1
+                return [-3]
             if not is_start:
                 # if it is range and its the end of range, return -1 = last day
-                return self.num_days-1
+                return [self.num_days - 1]
             # must be start of range, so return 0
-            return 0
+            return [0]
 
         # get date number
         day = ''
@@ -186,12 +201,14 @@ class Sort:
         mth = date[len(day):-len(year)]
         month = Day.is_three_letter_month(mth)
         if month == -1:
-            return -1
+            return [-3]
 
         # if we have a range, we must give a specific date (can't just be
         # sum like 13nov or nov2024 (can be for individual date search tho))
-        if is_range and (not year or not day):
-            return -1
+        if is_range:
+            if not year or not day:
+                return [-3]
+            else:
+                return [day, month, year]
 
-        return self.get_index_of_day(day, month, year)
-
+        return [self.get_index_of_day(day, month, year)]
