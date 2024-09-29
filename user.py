@@ -3,11 +3,6 @@ from day import Day
 from output import Output
 
 
-def is_valid_range(user_input, num_inputs):
-    return (user_input.isdigit() and  # make sure its a number b4 forcing below
-            int(user_input) in range(num_inputs))
-
-
 class User:
     always_ops = ['t', 'mm', 'tt']
 
@@ -19,116 +14,30 @@ class User:
         self.lang: int = 0
         self.name: str = ''
 
-    def pos_handler(self, cur_pos: str, mod: str):
-        # go back one
-        if mod == '-1':
-            return cur_pos[:-1]
-        # go back to start
-        if mod == '-2':
-            return '_'
-        # end program
-        if mod == '-3':
-            return ''
+        self.cur_in: str = ''
+        self.cur_out: str = ''
+        self.cur_pos: str = ''
+        self.prev_pos: str = ''
 
-        return cur_pos + mod
+        if not (os.path.exists(self.ptrs_path)):
+            self.create_ptrs_file()
+        if not (os.path.exists(self.user_path)):
+            self.cur_pos = "_"  # prompt user info
+            self.already_user = False
+        else:
+            self.set_user_info()
+            self.cur_pos = '___'
 
-    def input_handler(self, prompt: list[str], cur_pos: str = ''):
-        # keep track of non-positional returns
-        dum_out = ''
-        num_inputs = int(prompt[-1])
-        while True:
-            user_input: str = input(prompt[self.lang] + '\n')
-            print()  # extra line below answer
+            # nice spacing
+            self.just_print(Output.divider_o)
+            self.just_print(self.get_lang_spec_output(Output.welcome_o), True)
+            self.just_print(Output.divider_o + '\n')
 
-            # remove empty spaces
-            user_input = user_input.strip()
-            if user_input == '':  # hit enter for last op
-                if num_inputs == 0:  # unless we need an answer
-                    self.just_print(Output.no_empty_o)
-                    continue
-                return [self.pos_handler(cur_pos, str(num_inputs - 1)), dum_out]
+            self.already_user = True
 
-            # num_inputs = 0 -> need non-empty answer
-            # actual num of inputs then is 2nd to last option
-            elif num_inputs == 0:
-                num_inputs = int(prompt[-2])
-                # always ops or valid range
-                if num_inputs == -2:
-                    # check always ops
-                    pos_ret = self.find_always_op(user_input, cur_pos)
-                    if pos_ret != '-1':
-                        return [pos_ret, dum_out]
-                    # check valid range
-                    elif is_valid_range(user_input, num_inputs):
-                        return [self.pos_handler(cur_pos, user_input), dum_out]
-                    # if neither, return input
-                    return [cur_pos, user_input]
-                # return user input (if -1 (ie take anything) or in valid range)
-                elif (num_inputs == -1 or
-                        is_valid_range(user_input, num_inputs)):
-                    return [cur_pos, user_input.strip()]
-            else:
-                # check always ops
-                pos_ret = self.find_always_op(user_input, cur_pos)
-                if pos_ret != '-1':
-                    return [pos_ret, dum_out]
+        self.user_edit_in_prog: bool = False
 
-                # num_inputs = -1 -> can just write ptrs but can also pick option
-                elif num_inputs == -1:
-                    # 2nd to last element will tell nums ops
-                    # check if valid op
-                    num_inputs = int(prompt[-2])
-                    if is_valid_range(user_input, num_inputs):
-                        return [self.pos_handler(cur_pos, user_input), dum_out]
-                    else:
-                        return [cur_pos, user_input.strip()]
-
-                # check valid op
-                elif is_valid_range(user_input, num_inputs):
-                    return [self.pos_handler(cur_pos, user_input), dum_out]
-
-            # no match, say invalid and re-run
-            self.just_print(Output.invalid_o)
-
-    def find_always_op(self, user_input, cur_pos):
-        # check always ops
-        for i in range(len(self.always_ops)):
-            if user_input.lower() == self.always_ops[i]:
-                return self.pos_handler(cur_pos, str(-i - 1))
-
-        # not an always op
-        return '-1'
-
-    def user_info(self):
-        # get working dir
-        wd = os.path.dirname(os.path.realpath(__file__))
-
-        user_path = wd + '/user.txt'
-        if not (os.path.exists(user_path)):
-            self.create_user()
-            self.just_print(Output.welcome_new_o, self.name, True)
-            return
-
-        info = []
-        with open(user_path, 'r') as file:
-            for line in file:
-                info.append(line.strip())
-
-        self.lang = int(info[0])
-        self.name = info[1]
-
-        self.just_print(Output.welcome_o, self.name, True)
-
-    def create_user(self):
-        with open(self.user_path, 'w') as file:  # create user file
-            # take language pref and write to file
-            self.lang = int(self.input_handler(Output.language_o)[1])
-            file.write(str(self.lang) + '\n')
-
-            # take name and write to file
-            self.name = self.input_handler(Output.name_o)[1]
-            file.write(self.name + '\n')
-
+    def create_ptrs_file(self):
         with open(self.ptrs_path, 'w') as file:  # create file
             # create ptrs file with 20 days both in past and future
             back_forth = 20
@@ -136,28 +45,153 @@ class User:
                 day, month, year = Day.get_dates_around_today(i)
                 file.write(f'{day}/{month}/{year} ::  \t\n')
 
-    def just_print(self, output_all, addendum: str = '', with_div: bool = False):
-        printer = output_all[self.lang] + addendum + '.'
+    def set_user_info(self):
+        with open(self.user_path, 'r') as file:
+            self.lang = int(next(file).strip())
+            self.name = next(file).strip()
 
-        if with_div:
-            print(f'\n{Output.divider_o}')
-        print(printer)
-        if with_div:
-            print(f'{Output.divider_o}\n')
+    def update_user(self):
+        with open(self.user_path, 'w') as file:  # create user file
+            file.write(str(self.lang) + '\n')
+            file.write(self.name + '\n')
 
-    def repeat_prompt(self, pos):
-        trunc_pos = pos[:-1]
-        if trunc_pos in []: # Output.same_prompt:
-            return trunc_pos + 'x'
-        return pos
+        # nice spacing
+        self.just_print(Output.divider_o)
+        self.just_print(self.get_lang_spec_output(Output.welcome_new_o), True)
+        self.just_print(Output.divider_o + '\n')
+
+        self.user_edit_in_prog = False
+
+    def is_user_info_changed(self) -> bool:
+        if not (os.path.exists(self.user_path)):
+            return True
+
+        with open(self.user_path, 'r') as file:
+            lang_t = int(next(file).strip())
+            name_t = next(file).strip()
+
+            if lang_t != self.lang or name_t != self.name:
+                return True
+
+            return False
+
+    def pos_handler(self, mod: int):
+        # go back one (t)
+        if mod == -1:
+            self.cur_pos = self.cur_pos[:-1]
+            return
+
+        # go back to main menu (mm)
+        elif mod == -2:
+            if self.already_user:
+                self.cur_pos = '___'
+                return
+
+            # mm not available without preferences
+            print(self.get_lang_spec_output(Output.mm_unavailable_o))
+            return
+
+        # end program (tt)
+        elif mod == -3:
+            self.cur_pos = ''
+            return
+
+        # handle normally
+        self.cur_pos += str(mod)
+
+    def input_handler(self, prompt: list[str | int]):
+        # keep type of prompt if actual num_inputs is different (<0)
+        num_inputs_type = prompt[-1]
+        num_inputs = prompt[-1]
+        if num_inputs_type < 0:
+            num_inputs = prompt[-2]
+
+        while True:
+            user_input: str = input(prompt[self.lang] + '\n')
+            print()  # extra line below answer
+
+            # remove empty spaces
+            self.cur_in = user_input.strip()
+
+            # check always ops
+            if self.check_always_op_and_update():
+                return
+
+            # hit enter for last op
+            if self.cur_in == '':
+                if num_inputs_type == 0:  # unless we need an answer
+                    print(self.get_lang_spec_output(Output.no_empty_o))
+                    continue
+                elif num_inputs_type == -1:  # auto next and save pos info in cur_out
+                    self.auto_next_pos()
+                    self.cur_out = str(num_inputs - 1)  # last option
+                    return
+
+                # handle normal case OR where they can check range + in = out
+                self.pos_handler(num_inputs - 1)
+                return
+
+            # input = output (auto next, can't be empty)
+            elif num_inputs == 0:
+                self.auto_next_pos()
+                self.cur_out = user_input
+                return
+
+            # all remaining ops have range check
+            # check if type = -1 to auto next instead of move to actual option
+            elif self.check_valid_range_and_update(num_inputs, num_inputs_type):
+                return
+
+            # either in = out (specific pos) OR normal range check
+            # and just checked range above so must be in = out
+            if num_inputs_type == -2:
+                self.pos_handler(0)  # in = out will be the 0th option
+                self.cur_out = user_input
+                return
+
+            # no match, say invalid and re-run
+            print(self.get_lang_spec_output(Output.invalid_o))
+
+    # only one prompt/level that could be next
+    def auto_next_pos(self):
+        self.cur_pos += '_'
+
+    def check_valid_range_and_update(self, num_inputs: int, auto_next_type: int = 0) -> bool:
+        if self.cur_in.isdigit():  # make sure its a number b4 forcing below
+            cur_in_i = int(self.cur_in)
+            if cur_in_i in range(num_inputs):  # also will return false for neg nums
+                if auto_next_type == -1:
+                    self.auto_next_pos()
+                    self.cur_out = self.cur_in
+                else:
+                    self.pos_handler(cur_in_i)
+                return True
+        return False
+
+    # check always ops
+    def check_always_op_and_update(self) -> bool:
+        for i in range(len(self.always_ops)):
+            if self.cur_in == self.always_ops[i]:
+                self.pos_handler(-i - 1)
+                return True
+
+        # not an always op
+        return False
 
     def get_lang_spec_output(self, output_all):
         return output_all[self.lang]
 
-    def search_error_addendum(self, search_params):
+    def search_error_addendum(self, search_params) -> str:
         if search_params[0] == '-1':
             return self.get_lang_spec_output(Output.syntax_error_o) + search_params[1]
         elif search_params[0] == '-2':
             return self.get_lang_spec_output(Output.date_range_error_o)
         elif search_params[0] == '-3':
-            return self.get_lang_spec_output(Output.date_error_o)
+            return self.get_lang_spec_output(Output.date_range_error_o)
+
+    def just_print(self, output: str, with_name: bool = False):
+        if with_name:
+            if self.name:
+                output += ', ' + self.name
+            output += '.'
+        print(output)

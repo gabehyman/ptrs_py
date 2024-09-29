@@ -20,6 +20,7 @@ class Sort:
     def __init__(self, ptrs_path):
         self.days: list[Day] = []
         self.has_ptrs = False
+        # does nothing if no file
         with open(ptrs_path, 'r') as file:
             for line in file:
                 day: Day = Day(line.strip())
@@ -30,6 +31,8 @@ class Sort:
                     self.has_ptrs = True
 
         self.num_days = len(self.days)
+        self.first_rel_index = self.days[0].rel_index
+        self.last_rel_index = self.days[self.num_days-1].rel_index
 
     def get_last_day(self):
         if not self.has_ptrs:

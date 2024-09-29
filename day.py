@@ -14,6 +14,8 @@ class Day:
          'deciembre'],
         ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november',
          'december']]
+    # arbitrary (kinda) start of time
+    start_of_time: datetime = datetime(1999, 8, 24)
 
     def __init__(self, ptr):
         self.ptrs = []
@@ -30,6 +32,10 @@ class Day:
         self.month = int(date[1])
         self.year = int(date[2])
         self.date_obj = datetime(self.year, self.month, self.day)
+
+        # how many days since aug 24, 1999
+        self.rel_index = self.date_obj - Day.start_of_time
+
         self.day_of_week = self.date_obj.weekday()
 
         # get rid of ::
@@ -112,6 +118,83 @@ class Day:
         return long_token, indent
 
     @staticmethod
+    def date_to_index(date_str: str, is_range: bool = False):
+        date_obj: datetime
+        try:
+            # first try a two digit year
+            date_obj = datetime.strptime(date_str, "%m/%d/%y")
+        except ValueError:
+            try:
+                # then a four digit year
+                date_obj = datetime.strptime(date_str, "%m/%d/%Y")
+            except ValueError as e:
+                if is_range:
+                    return -2
+                else:
+                    dmy = date_str.split('/')
+                    if len(dmy) != 3:
+                        return -2
+
+                    all_empty = 0
+                    for part in dmy:
+                        if not part.isdigit():
+                            if part:
+                                return -2
+                        elif part:
+                            all_empty += 1
+
+                    # can't have all empty (///) or all numbers (cuz shouldve been valid with datetime)
+                    if all_empty == 0:
+                        return -2
+
+                    day = 0
+                    month = 0
+                    year = 4
+
+                    # month has to be 1-12
+                    if dmy[1]:
+                        month = int(dmy[1])
+                        if not 0 > month >= 12:
+                            return -2
+
+                    # year must be same/after start_of_time
+                    if dmy[2]:
+                        year = int(dmy[2])
+
+                        # can't be before start of time
+                        if 0 < year < Day.start_of_time.year:
+                            return -3
+                        elif (year == Day.start_of_time.year and
+                              month < Day.start_of_time.year):
+                            return -3
+
+                    # if we have a day and month, we need to check if day is valid
+                    if dmy[0]:
+                        day = int(dmy[0])
+                        if not 0 < int(dmy[0]) < 31:
+                            return -2
+                        elif month != 0:
+                            try:
+                                # see if valid date in a leap year (= 4) or given year
+                                datetime(year, month, day)
+
+                                # can't be before start of time
+                                if (year == Day.start_of_time.year and
+                                        (month == Day.start_of_time.year and
+                                         day < Day.start_of_time.day)):
+                                    return -3
+                            except ValueError:
+                                return -2
+
+                    return day, month, year
+
+        # can't do anything before start of time
+        if date_obj < Day.start_of_time:
+            return -3
+
+        return date_obj - Day.start_of_time
+
+    @staticmethod
     def get_dates_around_today(delta):
         current_date = datetime.now()
         date = current_date + timedelta(days=delta)
@@ -130,7 +213,7 @@ class Day:
         try:
             comp_date = datetime(int(year), int(month), int(day))
             if start.date_obj <= comp_date <= end.date_obj:
-                return (comp_date-start.date_obj).days
+                return (comp_date - start.date_obj).days
             return -2  # date out of range of ptrs
         except ValueError:
             return -3  # invalid date
