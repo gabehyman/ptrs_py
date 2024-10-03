@@ -1,6 +1,6 @@
 class Output:
     # outputs
-    divider_o: str = '---------------------------------------'
+    divider_o: str = '|-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-|'
     welcome_new_o: list[str] = ['welcome',
                                 'bienvenido',
                                 'welkom']

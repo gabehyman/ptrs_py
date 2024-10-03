@@ -19,19 +19,22 @@ class Search:
         self.sorter: Sort = sorter
 
         # default search params
-        self.start_rel_index = 0
-        self.end_rel_index = self.sorter.num_days
-        self.level = 1  # whole day scope for search (instead of individual ptr level)
-        self.context = 1  # num of ptrs shown b4 and after hit
+        self.start_rel_index: int = self.sorter.first_rel_index
+        self.end_rel_index: int = self.sorter.last_rel_index
+        self.level: int = 1  # whole day scope for search (instead of individual ptr level)
+        self.context: int = 1  # num of ptrs shown b4 and after hit
 
         # track non range search (e.g., 1/2/34, //2024, /8/, 1//23, etc)
-        self.singular_date = []
+        self.generic_date = []
 
         self.is_valid_search = False  # whether is valid
         self.error_code = -1  # track error in search
-        self.keyword_error = ''
+        self.keyword_error = ''  # track keyword that had error
 
         self.search_clauses = []  # store clauses to search
+
+        self.finds_day_is: list[int] = []  # keep track of indicies of days with find
+        self.finds_is: list[list[int]] = []  # keep track of indicies of ptrs with finds
 
     def parse_search(self, words: str):
         ind_search_words = words.split()
@@ -52,6 +55,8 @@ class Search:
 
                     # if last word
                     if i == num_search_words - 1:
+                        if search_word[-1] == '\"':
+                            search_clause = search_clause[:-2]
                         break
                     elif search_word[-1] == '\"':
                         search_clause = search_clause[:-2]
@@ -77,7 +82,7 @@ class Search:
 
                         # only change start range from -1 (syntax error) if two elements
                         if len(dtm_range) == 2:
-                            start_range = Day.date_to_index(dtm_range[0], True)
+                            start_range = Day.date_to_index(dtm_range[0], self.sorter.is_euro_date, True)
 
                         # not an error
                         if start_range >= 0:
@@ -87,7 +92,7 @@ class Search:
                             self.error_code = start_range
                             return
 
-                        end_range = Day.date_to_index(dtm_range[0], True)
+                        end_range = Day.date_to_index(dtm_range[0], self.sorter.is_euro_date, True)
                         if end_range >= 0:
                             self.end_rel_index = end_range
                         else:
@@ -97,12 +102,31 @@ class Search:
 
                     # not a range
                     else:
-                        self.singular_date = Day.date_to_index(dtm_search)
-                        if not isinstance(self.singular_date, (list, tuple)):
-                            if self.singular_date < 0:
+                        self.generic_date = Day.date_to_index(dtm_search, self.sorter.is_euro_date)
+                        if not isinstance(self.generic_date, (list, tuple)):
+                            # error parsing
+                            if self.generic_date < 0:
                                 self.is_valid_search = False
-                                self.error_code = self.singular_date
+                                self.error_code = self.generic_date
                                 return
+                            # specific date not in range of users pointers
+                            elif not self.sorter.first_rel_index < self.generic_date < self.sorter.last_rel_index:
+                                self.is_valid_search = False
+                                self.error_code = -3
+                                return
+                            # must be a valid specific date
+                            else:
+                                # make range just that day
+                                self.start_rel_index = self.generic_date
+                                self.end_rel_index = self.generic_date
+                                # reset generic so we know not to check that
+                                self.generic_date = []
+
+                    #  start date must be <= end date, otherwise invalid
+                    if self.start_rel_index > self.end_rel_index:
+                        self.is_valid_search = False
+                        self.error_code = -2
+                        return
 
                 # change level of search
                 elif search_word[:self.lvl_len] == self.lvl:
@@ -122,6 +146,7 @@ class Search:
                     # keep track of which keyword could cause an error
                     self.keyword_error = self.ctxt
 
+                    # cant be a negative number
                     if search_word[self.ctxt_len].isdigit():
                         self.context = int(search_word[self.ctxt_len:])
                     else:
@@ -137,33 +162,70 @@ class Search:
                 search_clause = search_word
 
             if add_search_clause:
-                self.search_clauses = search_clause
+                self.search_clauses.append(search_clause)
 
             i += 1
 
         self.is_valid_search = True
 
+    def do_search(self):
+        is_last_clause_found: int = 0  # count number of consecutive finds (to remove previous finds if &&)
+        is_last_clause_and: bool = False
+        is_find = False  # track if there are finds on the given day
+        for day_i in range(self.start_rel_index, self.end_rel_index + 1):
+            for clause in self.search_clauses:
+                # clause to left and right both must be finds
+                if clause == '&&':
+                    is_last_clause_and = True
+                    continue
+                # if last clause before and was not found, skip
+                elif is_last_clause_and and not is_last_clause_found:
+                    is_last_clause_and = False
+                    continue
+
+                day: Day = self.sorter.days[self.sorter.rel_index_to_user_days(day_i)]
+                if self.generic_date:
+                    if not day.is_match_generic_date(self.generic_date, self.sorter.is_euro_date):
+                        break  # go to next day
+                finds = [find_i for find_i, ptr in enumerate(day.ptrs) if clause in ptr]
+
+                if finds:
+                    # first find on day
+                    if not is_find:
+                        self.finds_day_is.append(day_i)
+                        self.finds_is.append(finds)
+                    # not first find (just add indicies, not day)
+                    else:
+                        self.finds_is[-1] = list(set(self.finds_is[-1] + finds))
+
+                    is_last_clause_found += 1
+                    is_find = True
+                else:
+                    # remove previous finds because one wasn't found
+                    if is_last_clause_and:
+                        for i in range(is_last_clause_found):
+                            self.finds_day_is.pop()
+                            self.finds_is.pop()
+
+                    # reset back to 0 because last not found
+                    is_last_clause_found = 0
+
+                # last clause no longer and
+                is_last_clause_and = False
+
+            # only sort once for efficiency
+            if is_find:
+                self.finds_is[-1] = sorted(self.finds_is[-1])
+                is_find = False
+
+    def print_search_finds(self):
+        for day_i in self.finds_day_is:
+            print('yo')
+
     def get_search_error_output(self):
-        ret = ""
         if self.error_code == -1:
-            ret = Output.syntax_error_o
+            return Output.syntax_error_o
         elif self.error_code == -2:
-            ret = Output.keyword_error_o
+            return Output.keyword_error_o
         elif self.error_code == -3:
-            ret = Output.date_range_error_o
-
-        return ret + f' (keyword = {self.keyword_error}'
-
-    def reset_searcher(self):
-        self.start_rel_index = 0
-        self.end_rel_index = self.sorter.num_days
-        self.level = 1  # whole day scope for search (instead of individual ptr level)
-        self.context = 1  # num of ptrs shown b4 and after hit
-
-        # track non range search (e.g., 1/2/34, //2024, /8/, 1//23, etc)
-        self.singular_date = []
-
-        self.is_valid_search = False  # whether is valid
-        self.error_code = -1  # track error in search
-
-        self.search_clauses = []  # store clauses to search
+            return Output.date_range_error_o

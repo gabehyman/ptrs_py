@@ -17,25 +17,25 @@ sorter: Sort = Sort(userer.ptrs_path)
 lang_prev = -1  # store prev lang temp in case not changed
 day = 0  # which day to show
 while userer.cur_pos != '':  # end porgram
-    show_day = False  # will not show day by default
+    show_day = True  # will not show day by default
 
     # ----- userer.cur_pos -> tracks user in program ----- #
 
     # get user lang
     if userer.cur_pos == '_':
-        lang_prev = userer.lang
+        lang_prev = userer.lang  # store in case user goes back to mm or ends
         userer.lang = 0  # reset lang (only one element in lang output array)
         userer.user_edit_in_prog = True  # user info is being updated
-        userer.just_print(Output.divider_o)
+        print(Output.divider_o)
 
     # get user name
     elif userer.cur_pos == '__':
         # only update if user editting already in progress (ie coming from '_')
         if userer.user_edit_in_prog:
             userer.lang = int(userer.cur_out)
-            lang_prev = -1
+            lang_prev = -1  # language updated so discard prev
         else:
-            userer.just_print(Output.divider_o)
+            print(Output.divider_o)
 
             # so we know to update file if just editing name (did not go back to lang)
             userer.user_edit_in_prog = True  # user info is being updated
@@ -53,6 +53,7 @@ while userer.cur_pos != '':  # end porgram
                 userer.name = userer.cur_out
                 userer.already_user = True
             else:
+                # if mm at lang settings, restore prev lang
                 if lang_prev != -1:
                     userer.lang = lang_prev
                     lang_prev = -1
@@ -90,13 +91,19 @@ while userer.cur_pos != '':  # end porgram
         # create searcher (which has a reference to sorter)
         searcher: Search = Search(sorter)
 
-        # parse search
-        searcher.parse_search(userer.cur_pos)
+        searcher.parse_search(userer.cur_out)
         if searcher.is_valid_search:
-            print('nice')
+            searcher.do_search()
+            if searcher.finds_day_is:
+                for i in range(len(searcher.finds_day_is)):
+                    day_search = sorter.days[searcher.finds_day_is[i]-sorter.first_rel_index]
+                    day_search.print_search_ptrs(userer.lang, i, searcher.finds_is[i], searcher.search_clauses, searcher.context)
+            else:
+                print('nada')
         else:
             userer.pos_handler(-1)
-            userer.just_print(searcher.get_search_error_output())
+            userer.just_print(userer.get_lang_spec_output(searcher.get_search_error_output())
+                              + f' (keyword = {searcher.keyword_error})')
 
         show_day = False
 
@@ -106,5 +113,7 @@ while userer.cur_pos != '':  # end porgram
 
     userer.input_handler(Output.all_pos_o[userer.cur_pos])
 
+if lang_prev != -1:
+    userer.lang = lang_prev
 userer.just_print(userer.get_lang_spec_output(Output.afscheid_o), True)  # ptrs closed, neem afscheid
 

@@ -29,10 +29,8 @@ class User:
             self.cur_pos = '___'
 
             # nice spacing
-            self.just_print(Output.divider_o)
-            self.just_print(self.get_lang_spec_output(Output.welcome_o), True)
-            self.just_print(Output.divider_o + '\n')
-
+            Day.print_with_div(self.get_lang_spec_output(Output.welcome_o), self.name, char='*')
+            print()
             self.already_user = True
 
         self.user_edit_in_prog: bool = False
@@ -56,9 +54,8 @@ class User:
             file.write(self.name + '\n')
 
         # nice spacing
-        self.just_print(Output.divider_o)
-        self.just_print(self.get_lang_spec_output(Output.welcome_new_o), True)
-        self.just_print(Output.divider_o + '\n')
+        Day.print_with_div(self.get_lang_spec_output(Output.welcome_new_o), self.name, char='*')
+        print()
 
         self.user_edit_in_prog = False
 
@@ -73,7 +70,7 @@ class User:
             if lang_t != self.lang or name_t != self.name:
                 return True
 
-            return False
+        return False
 
     def pos_handler(self, mod: int):
         # go back one (t)
