@@ -17,16 +17,16 @@ class Day:
     # arbitrary (kinda) start of time
     start_of_time: datetime = datetime(1999, 8, 24)
 
-    def __init__(self, ptr):
+    def __init__(self, ptr, is_euro_date: bool):
         self.ptrs: list[str] = []
 
         self.max_width: int = 100
-        self.align_up_to_ptr: int = 3
-        self.align_up_to_day: int = 4
+        self.align_up_to_ptr: int = 4
+        self.align_up_to_day: int = 6
 
         # split into each word
         words: list[str] = ptr.split()
-        date: list[str] = words.pop(0).split('/')
+        date = Day.sort_dmy([int(p) for p in words.pop(0).split('/')], is_euro_date)
 
         self.day: int = int(date[0])
         self.month: int = int(date[1])
@@ -62,7 +62,7 @@ class Day:
     # print date info nicely
     def get_nice_date(self, lang: int) -> str:
         return (
-            f'({self.days_of_week[lang][self.day_of_week]}) {self.day} {self.months[lang][self.month]}, {self.year}:')
+            f'({self.days_of_week[lang][self.day_of_week]}) {self.day} {self.months[lang][self.month - 1]}, {self.year}:')
 
     def has_ptrs(self):
         return self.ptrs
@@ -108,9 +108,10 @@ class Day:
 
         print()
 
-    def print_search_ptrs(self, lang: int, num_day: int, find_is: list[int], search_clauses: list[str], context: int):
+    def print_search_ptrs(self, lang: int, num_day: int, find_is: list[int], search_clauses: set, context: int):
         # print aligned index
-        Day.print_with_div(f'{Day.num_to_letter(num_day):>{self.align_up_to_day}}. {self.get_nice_date(lang)}')
+        day_num_pound = '#' + str(num_day)
+        Day.print_with_div(f'{day_num_pound:>{self.align_up_to_day}}. {self.get_nice_date(lang)}')
 
         for i in self.get_context_search_indicies(find_is, context):
             no_overflow = ''  # store one line
@@ -175,8 +176,7 @@ class Day:
 
         return long_token, indent
 
-    def is_match_generic_date(self, dmy: list[str], is_euro_date: bool) -> bool:
-        match: bool = False
+    def is_match_generic_date(self, dmy: list[int], is_euro_date: bool) -> bool:
         day, month, year = Day.sort_dmy(dmy, is_euro_date)
         if day:
             if self.day != day:
@@ -190,7 +190,7 @@ class Day:
         return True
 
     @staticmethod
-    def find_all_substring_is(ptr: str, search_clauses: list[str]) -> (list[int], list[int]):
+    def find_all_substring_is(ptr: str, search_clauses: set) -> (list[int], list[int]):
         start_is: set = set()
         end_is: set = set()
 
@@ -239,7 +239,7 @@ class Day:
     @staticmethod
     def print_with_div(output: str, name: str = '', before: bool = True, after: bool = True, char: chr = '-'):
         if name:
-            output += f',{name}.'
+            output += f', {name}.'
 
         if before:
             print(char * len(output))
@@ -258,15 +258,15 @@ class Day:
 
     # handle euro and american dates
     @staticmethod
-    def sort_dmy(dmy, is_euro_date: bool):
+    def sort_dmy(dmy: list[int], is_euro_date: bool) -> list[int]:
         if is_euro_date:
             # 24aug 1999
-            return dmy[0], dmy[1], dmy[2]
+            return dmy
         # aug24 1999
-        return dmy[1], dmy[0], dmy[2]
+        return [dmy[1], dmy[0], dmy[2]]
 
     @staticmethod
-    def date_to_index(date_str: str, is_euro_date: bool, is_range: bool = False):
+    def date_to_index(date_str: str, is_euro_date: bool, is_range: bool = False) -> list[int]:
         date_obj: datetime
         d_format = "%d/%m/%y"
         if not is_euro_date:
@@ -281,52 +281,53 @@ class Day:
                 date_obj = datetime.strptime(date_str, d_format)
             except ValueError as e:
                 if is_range:
-                    return -2
+                    return [-2]
                 else:
                     dmy = date_str.split('/')
                     if len(dmy) != 3:
-                        return -2
+                        return [-2]
 
                     all_empty = 0
-                    for part in dmy:
-                        if not part.isdigit():
-                            if part:
-                                return -2
-                        elif part:
+                    for i in range(len(dmy)):
+                        if not dmy[i].isdigit():
+                            if dmy[i]:
+                                return [-2]
+                            # must be empty so add to count and make it 0
                             all_empty += 1
+                            dmy[i] = '0'
 
                     # can't have all empty (///) or all numbers (cuz shouldve been valid with datetime)
-                    if all_empty == 0:
-                        return -2
+                    if all_empty == 3 or all_empty == 0:
+                        return [-2]
 
-                    day = 0
-                    month = 0
-                    year = 4
+                    day: int = 0
+                    month: int = 0
+                    year: int = 4
 
-                    day_search, month_search, year_search = Day.sort_dmy(dmy, is_euro_date)
+                    day_search, month_search, year_search = Day.sort_dmy([int(p) for p in dmy], is_euro_date)
 
                     # month has to be 1-12
                     if month_search:
-                        month = int(month_search)
+                        month = month_search
                         if not 0 < month <= 12:
-                            return -2
+                            return [-2]
 
                     # year must be same/after start_of_time
                     if year_search:
-                        year = int(year_search)
+                        year = year_search
 
                         # can't be before start of time
                         if 0 < year < Day.start_of_time.year:
-                            return -3
+                            return [-3]
                         elif (year == Day.start_of_time.year and
-                              month < Day.start_of_time.year):
-                            return -3
+                              month < Day.start_of_time.month):
+                            return [-3]
 
                     # if we have a day and month, we need to check if day is valid
                     if day_search:
-                        day = int(day_search)
+                        day = day_search
                         if not 0 < day < 31:
-                            return -2
+                            return [-2]
                         elif month != 0:
                             try:
                                 # see if valid date in a leap year (= 4) or given year
@@ -334,22 +335,22 @@ class Day:
 
                                 # can't be before start of time
                                 if (year == Day.start_of_time.year and
-                                        (month == Day.start_of_time.year and
+                                        (month == Day.start_of_time.month and
                                          day < Day.start_of_time.day)):
-                                    return -3
+                                    return [-3]
                             except ValueError:
-                                return -2
+                                return [-2]
 
                     # just to include leap year
                     if year == 4:
                         year = 0
-                    return day, month, year
+                    return [day, month, year]
 
         # can't do anything before start of time
         if date_obj < Day.start_of_time:
-            return -3
+            return [-3]
 
-        return (date_obj - Day.start_of_time).days
+        return [(date_obj - Day.start_of_time).days]
 
     @staticmethod
     def get_dates_around_today(delta):
@@ -363,7 +364,7 @@ class Day:
             return datetime(int(year), int(month), int(day))
         except ValueError:
             # if invalid date return date at beginning of time haha
-            return datetime(1, 1, 1)
+            return Day.start_of_time
 
     @staticmethod
     def get_index(start, end, day, month, year):
@@ -374,17 +375,6 @@ class Day:
             return -2  # date out of range of ptrs
         except ValueError:
             return -3  # invalid date
-
-    # check if input is one of the months first three letters (english)
-    @staticmethod
-    def is_three_letter_month(mth: str) -> int:
-        counter = 1
-        if len(mth) == 3:
-            for month in Day.months[0]:
-                if mth == month[:3]:
-                    return counter
-                counter += 1
-        return -1
 
     # check if input is one of the days of weeks first three letters (english)
     @staticmethod

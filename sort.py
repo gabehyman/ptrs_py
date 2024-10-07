@@ -17,13 +17,15 @@ def check_date_validity_return(ret, dtm):
 
 class Sort:
 
-    def __init__(self, ptrs_path):
+    def __init__(self, ptrs_path, is_euro_date: bool):
         self.days: list[Day] = []
         self.has_ptrs = False
+        self.is_euro_date: bool = is_euro_date
+
         # does nothing if no file
         with open(ptrs_path, 'r') as file:
             for line in file:
-                day: Day = Day(line.strip())
+                day: Day = Day(line.strip(), self.is_euro_date)
                 self.days.append(day)
 
                 # are there any pointers written
@@ -33,10 +35,6 @@ class Sort:
         self.num_days = len(self.days)
         self.first_rel_index = self.days[0].rel_index
         self.last_rel_index = self.days[self.num_days-1].rel_index
-
-        # switch from european to american date format
-        # TODO: make a switch for this in user.txt
-        self.is_euro_date: bool = True
 
     def get_last_day(self):
         if not self.has_ptrs:

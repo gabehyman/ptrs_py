@@ -15,9 +15,9 @@ class User:
         self.name: str = ''
 
         self.cur_in: str = ''
-        self.cur_out: str = ''
         self.cur_pos: str = ''
-        self.prev_pos: str = ''
+
+        self.has_searched: bool = False
 
         if not (os.path.exists(self.ptrs_path)):
             self.create_ptrs_file()
@@ -33,6 +33,9 @@ class User:
             print()
             self.already_user = True
 
+        # TODO: make a switch for this in user.txt
+        # handle european and american date formats
+        self.is_euro_date = True
         self.user_edit_in_prog: bool = False
 
     def create_ptrs_file(self):
@@ -81,7 +84,8 @@ class User:
         # go back to main menu (mm)
         elif mod == -2:
             if self.already_user:
-                self.cur_pos = '___'
+                self.cur_pos = Output.all_pos_names_o['mm']
+                self.has_searched = False  # clear searcher
                 return
 
             # mm not available without preferences
@@ -96,11 +100,13 @@ class User:
         # handle normally
         self.cur_pos += str(mod)
 
-    def input_handler(self, prompt: list[str | int]):
+    def input_handler(self, prompt: list[str | int], dyn_num_inputs: int):
         # keep type of prompt if actual num_inputs is different (<0)
         num_inputs_type = prompt[-1]
         num_inputs = prompt[-1]
-        if num_inputs_type < 0:
+        if num_inputs == 1:
+            num_inputs = dyn_num_inputs
+        elif num_inputs_type < 0:
             num_inputs = prompt[-2]
 
         while True:
@@ -116,12 +122,12 @@ class User:
 
             # hit enter for last op
             if self.cur_in == '':
-                if num_inputs_type == 0:  # unless we need an answer
+                if num_inputs_type == 0 or num_inputs_type == 1:  # unless we need an answer
                     print(self.get_lang_spec_output(Output.no_empty_o))
                     continue
-                elif num_inputs_type == -1:  # auto next and save pos info in cur_out
+                elif num_inputs_type == -1:  # auto next and save pos info in cur_in
                     self.auto_next_pos()
-                    self.cur_out = str(num_inputs - 1)  # last option
+                    self.cur_in = str(num_inputs - 1)  # last option
                     return
 
                 # handle normal case OR where they can check range + in = out
@@ -131,7 +137,6 @@ class User:
             # input = output (auto next, can't be empty)
             elif num_inputs == 0:
                 self.auto_next_pos()
-                self.cur_out = user_input
                 return
 
             # all remaining ops have range check
@@ -143,7 +148,6 @@ class User:
             # and just checked range above so must be in = out
             if num_inputs_type == -2:
                 self.pos_handler(0)  # in = out will be the 0th option
-                self.cur_out = user_input
                 return
 
             # no match, say invalid and re-run
@@ -156,10 +160,9 @@ class User:
     def check_valid_range_and_update(self, num_inputs: int, auto_next_type: int = 0) -> bool:
         if self.cur_in.isdigit():  # make sure its a number b4 forcing below
             cur_in_i = int(self.cur_in)
-            if cur_in_i in range(num_inputs):  # also will return false for neg nums
-                if auto_next_type == -1:
+            if cur_in_i < num_inputs:  # also will return false for neg nums
+                if auto_next_type == -1 or auto_next_type == 1:
                     self.auto_next_pos()
-                    self.cur_out = self.cur_in
                 else:
                     self.pos_handler(cur_in_i)
                 return True
@@ -185,10 +188,3 @@ class User:
             return self.get_lang_spec_output(Output.date_range_error_o)
         elif search_params[0] == '-3':
             return self.get_lang_spec_output(Output.date_range_error_o)
-
-    def just_print(self, output: str, with_name: bool = False):
-        if with_name:
-            if self.name:
-                output += ', ' + self.name
-            output += '.'
-        print(output)
