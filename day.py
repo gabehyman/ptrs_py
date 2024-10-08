@@ -17,7 +17,7 @@ class Day:
     # arbitrary (kinda) start of time
     start_of_time: datetime = datetime(1999, 8, 24)
 
-    def __init__(self, ptr, is_euro_date: bool):
+    def __init__(self, ptr):
         self.ptrs: list[str] = []
 
         self.max_width: int = 100
@@ -26,7 +26,7 @@ class Day:
 
         # split into each word
         words: list[str] = ptr.split()
-        date = Day.sort_dmy([int(p) for p in words.pop(0).split('/')], is_euro_date)
+        date = Day.sort_dmy([int(p) for p in words.pop(0).split('/')], True)  # back end is always euro
 
         self.day: int = int(date[0])
         self.month: int = int(date[1])
@@ -60,16 +60,20 @@ class Day:
         self.num_ptrs = len(self.ptrs)
 
     # print date info nicely
-    def get_nice_date(self, lang: int) -> str:
+    def get_nice_date(self, lang: int, is_euro_date: bool) -> str:
+        if is_euro_date:
+            return (
+                f'({self.days_of_week[lang][self.day_of_week]}) {self.day} {self.months[lang][self.month - 1]}, {self.year}:')
+
         return (
-            f'({self.days_of_week[lang][self.day_of_week]}) {self.day} {self.months[lang][self.month - 1]}, {self.year}:')
+            f'({self.days_of_week[lang][self.day_of_week]}) {self.months[lang][self.month - 1]} {self.day}, {self.year}:')
 
     def has_ptrs(self):
         return self.ptrs
 
     # print all ptrs of a day
-    def print_all_ptrs(self, lang: int):
-        Day.print_with_div(self.get_nice_date(lang))
+    def print_all_ptrs(self, lang: int, is_euro_date: bool):
+        Day.print_with_div(self.get_nice_date(lang, is_euro_date))
 
         if self.num_ptrs == 0:
             # print aligned index
@@ -108,10 +112,11 @@ class Day:
 
         print()
 
-    def print_search_ptrs(self, lang: int, num_day: int, find_is: list[int], search_clauses: set, context: int):
+    def print_search_ptrs(self, lang: int, num_day: int, find_is: list[int], search_clauses: set, context: int,
+                          is_euro_date: bool):
         # print aligned index
         day_num_pound = '#' + str(num_day)
-        Day.print_with_div(f'{day_num_pound:>{self.align_up_to_day}}. {self.get_nice_date(lang)}')
+        Day.print_with_div(f'{day_num_pound:>{self.align_up_to_day}}. {self.get_nice_date(lang, is_euro_date)}')
 
         for i in self.get_context_search_indicies(find_is, context):
             no_overflow = ''  # store one line
@@ -259,6 +264,8 @@ class Day:
     # handle euro and american dates
     @staticmethod
     def sort_dmy(dmy: list[int], is_euro_date: bool) -> list[int]:
+        # TODO: test with american date
+        # TODO: ALSO JUST DO FOR FRONT END, in file always euro
         if is_euro_date:
             # 24aug 1999
             return dmy

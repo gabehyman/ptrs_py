@@ -4,6 +4,7 @@ from output import Output
 
 
 class User:
+    # t = back = -1 | mm = min menu = -2 | tt = end program = -3
     always_ops = ['t', 'mm', 'tt']
 
     def __init__(self):
@@ -11,31 +12,33 @@ class User:
         self.user_path: str = self.wd + '/user.txt'
         self.ptrs_path: str = self.wd + '/ptrs.txt'
 
+        # asnwered by user
         self.lang: int = 0
+        self.is_euro_date: bool = True
         self.name: str = ''
 
+        # track user input and position in program
         self.cur_in: str = ''
         self.cur_pos: str = ''
 
+        # allow for user to go back to previous search result
         self.has_searched: bool = False
 
         if not (os.path.exists(self.ptrs_path)):
+            # TODO: make file structure instead of one file
             self.create_ptrs_file()
         if not (os.path.exists(self.user_path)):
-            self.cur_pos = "_"  # prompt user info
+            self.cur_pos = Output.all_pos_names_o['lang']  # prompt user info
             self.already_user = False
         else:
-            self.set_user_info()
-            self.cur_pos = '___'
+            self.set_user_info()  # read from file
+            self.cur_pos = Output.all_pos_names_o['mm']
 
             # nice spacing
             Day.print_with_div(self.get_lang_spec_output(Output.welcome_o), self.name, char='*')
             print()
             self.already_user = True
 
-        # TODO: make a switch for this in user.txt
-        # handle european and american date formats
-        self.is_euro_date = True
         self.user_edit_in_prog: bool = False
 
     def create_ptrs_file(self):
@@ -49,11 +52,13 @@ class User:
     def set_user_info(self):
         with open(self.user_path, 'r') as file:
             self.lang = int(next(file).strip())
+            self.is_euro_date = bool(int(next(file).strip()))
             self.name = next(file).strip()
 
     def update_user(self):
         with open(self.user_path, 'w') as file:  # create user file
             file.write(str(self.lang) + '\n')
+            file.write(str(int(self.is_euro_date)) + '\n')
             file.write(self.name + '\n')
 
         # nice spacing
@@ -67,10 +72,12 @@ class User:
             return True
 
         with open(self.user_path, 'r') as file:
-            lang_t = int(next(file).strip())
+            # TODO: break into ind files and update each separately
+            lang_t: int = int(next(file).strip())
+            date_t: bool = bool(int(next(file).strip()))
             name_t = next(file).strip()
 
-            if lang_t != self.lang or name_t != self.name:
+            if lang_t != self.lang or date_t != self.is_euro_date or name_t != self.name:
                 return True
 
         return False

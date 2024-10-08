@@ -1,31 +1,18 @@
-from typing import List, Any
-
 from day import Day
-
 import random as rand
-import datetime
-
-
-def check_date_validity_return(ret, dtm):
-    if ret == -1:
-        return ['-1', f'\"{dtm}\"']
-    elif ret == -2:
-        return ['-2']
-
-    return ['-3']
 
 
 class Sort:
 
-    def __init__(self, ptrs_path, is_euro_date: bool):
+    def __init__(self, ptrs_path: str, is_euro_date: bool):
         self.days: list[Day] = []
-        self.has_ptrs = False
+        self.has_ptrs: bool = False
         self.is_euro_date: bool = is_euro_date
 
         # does nothing if no file
         with open(ptrs_path, 'r') as file:
             for line in file:
-                day: Day = Day(line.strip(), self.is_euro_date)
+                day: Day = Day(line.strip())
                 self.days.append(day)
 
                 # are there any pointers written
@@ -33,6 +20,8 @@ class Sort:
                     self.has_ptrs = True
 
         self.num_days = len(self.days)
+
+        # relative to start of time (24aug1999)
         self.first_rel_index = self.days[0].rel_index
         self.last_rel_index = self.days[self.num_days-1].rel_index
 
@@ -46,7 +35,7 @@ class Sort:
                     return i
 
     def get_rand_day(self):
-        # no ptrs have been written
+        # ptrs have been written
         if self.has_ptrs:
             # don't show days with no ptrs written
             while True:
@@ -62,9 +51,10 @@ class Sort:
     def next_day(self, day):
         return (day + 1) % self.num_days
 
-    def rel_index_to_user_days(self, rel_index: int):
-        return rel_index - self.first_rel_index
-
     # go to previous day or wrap around
     def prev_day(self, day):
         return (day - 1 + self.num_days) % self.num_days
+
+    # convert relative index into an array index
+    def rel_index_to_user_days(self, rel_index: int):
+        return rel_index - self.first_rel_index

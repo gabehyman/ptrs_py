@@ -1,9 +1,6 @@
 from day import Day
-from user import User
 from output import Output
 from sort import Sort
-
-import os
 
 
 class Search:

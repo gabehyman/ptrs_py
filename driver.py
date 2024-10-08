@@ -31,11 +31,17 @@ while userer.cur_pos != '':  # end porgram
         userer.user_edit_in_prog = True  # user info is being updated
         print(Output.divider_o)
 
+    # get user date preference
+    elif userer.cur_pos == Output.all_pos_names_o['date']:
+        # nothing to update if coming back from name
+        if userer.cur_in != User.always_ops[0]:
+            userer.lang = int(userer.cur_in)
+
     # get user name
     elif userer.cur_pos == Output.all_pos_names_o['name']:
         # only update if user editting already in progress (ie coming from '_')
         if userer.user_edit_in_prog:
-            userer.lang = int(userer.cur_in)
+            userer.is_euro_date = bool(int(userer.cur_in))
         else:
             print(Output.divider_o)
 
@@ -129,7 +135,7 @@ while userer.cur_pos != '':  # end porgram
                 # search each day in finds and print
                 day_search = sorter.days[sorter.rel_index_to_user_days(searcher.finds_day_is[i])]
                 day_search.print_search_ptrs(userer.lang, i, searcher.finds_is[i], searcher.search_clauses,
-                                             searcher.context)
+                                             searcher.context, userer.is_euro_date)
 
             # update allowed range of input based on #days with finds
             dyn_range_inputs = searcher.num_days_find
@@ -147,7 +153,7 @@ while userer.cur_pos != '':  # end porgram
         show_day = True
 
     if show_day:  # control to show day or not
-        sorter.days[day].print_all_ptrs(userer.lang)
+        sorter.days[day].print_all_ptrs(userer.lang, userer.is_euro_date)
 
     # handle user input and determine next position in program
     userer.input_handler(Output.all_pos_o[userer.cur_pos], dyn_range_inputs)
