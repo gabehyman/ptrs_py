@@ -1,16 +1,31 @@
+from typing import List, Any
+
 from day import Day
 
 import random as rand
+import datetime
+
+
+def check_date_validity_return(ret, dtm):
+    if ret == -1:
+        return ['-1', f'\"{dtm}\"']
+    elif ret == -2:
+        return ['-2']
+
+    return ['-3']
 
 
 class Sort:
 
-    def __init__(self, ptrs_path):
+    def __init__(self, ptrs_path, is_euro_date: bool):
         self.days: list[Day] = []
         self.has_ptrs = False
+        self.is_euro_date: bool = is_euro_date
+
+        # does nothing if no file
         with open(ptrs_path, 'r') as file:
             for line in file:
-                day: Day = Day(line.strip())
+                day: Day = Day(line.strip(), self.is_euro_date)
                 self.days.append(day)
 
                 # are there any pointers written
@@ -18,6 +33,8 @@ class Sort:
                     self.has_ptrs = True
 
         self.num_days = len(self.days)
+        self.first_rel_index = self.days[0].rel_index
+        self.last_rel_index = self.days[self.num_days-1].rel_index
 
     def get_last_day(self):
         if not self.has_ptrs:
@@ -45,7 +62,9 @@ class Sort:
     def next_day(self, day):
         return (day + 1) % self.num_days
 
+    def rel_index_to_user_days(self, rel_index: int):
+        return rel_index - self.first_rel_index
+
     # go to previous day or wrap around
     def prev_day(self, day):
         return (day - 1 + self.num_days) % self.num_days
-

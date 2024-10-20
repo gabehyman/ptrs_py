@@ -1,63 +1,97 @@
 class Output:
     # outputs
-    divider_o: str = '---------------------------------------'
-    welcome_new_o: list[str] = ['welcome, ',
-                                'bienvenido, ',
-                                'welkom, ']
-    welcome_o: list[str] = ['welcome back, ',
-                            'bienvenido de vuelta, ',
-                            'welkom terug, ']
-    afscheid_o: list[str] = ['peace, ',
-                             'ciao, ',
-                             'later, ']
+    divider_o: str = '|-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-|'
+    welcome_new_o: list[str] = ['welcome',
+                                'bienvenido',
+                                'welkom']
+    welcome_o: list[str] = ['welcome back',
+                            'bienvenido de vuelta',
+                            'welkom terug']
+    afscheid_o: list[str] = ['peace',
+                             'ciao',
+                             'later']
+    mm_unavailable_o: list[str] = ['mm becomes available after inputting language and name preferences.',
+                                   'mm estara disponible despues de entrar su preferencia de lengua y nombre.',
+                                   'mm wordt beschikbaar nadat u uw taal en naam voorkeur geeft.']
     empty_o: list[str] = ['<no ptrs on this day>',
                           '<no ptrs en este dia>'
                           '<geen ptrs op deze dag>']
-    empty_comp_o: list[str] = ['add ptrs to be shown a random day',
-                               'agrega algunos ptrs para ver un dia aleatario',
-                               'voeg wat ptrs toe om een willekeurige dag te zien']
-    no_empty_o: list[str] = ['i need an answer', 'necesito respuesta', 'ik heb een antwoord nodig']
-    invalid_o: list[str] = ['invalid input. type the # that corresponds with what you wanna do',
-                            'entrada invalida. pon el numero que corresponde con lo que quieres hacer',
-                            'ongeldige invoer. geef het nummer die past met wat je wil doen']
+    all_days_empty_o: list[str] = ['add ptrs to be shown a random day.',
+                                   'agrega algunos ptrs para ver un dia aleatario.',
+                                   'voeg wat ptrs toe om een willekeurige dag te zien.']
+    no_empty_o: list[str] = ['i need an answer.', 'necesito respuesta.', 'ik heb een antwoord nodig.']
+    no_finds_o: list[str] = ['no matches.', 'no resultados.', 'geen resultaten.']
+    invalid_o: list[str] = ['input out of range.',
+                            'entrada fuera del rango.',
+                            'invoer buiten bereik.']
+    invalid_search_o: list[str] = ['invalid search due to the following: ',
+                                   'busqueda invalida debido a lo siguente: ',
+                                   'ongeldige opzoek vanwege het volgende: ']
+    syntax_error_o: list[str] = ['syntax error',
+                                 'error sintactico',
+                                 'syntaxisfout']
+    keyword_error_o: list[str] = ['invalid keyword input',
+                                  'entrada de keyword invalida',
+                                  'ongeldige keyword invoer']
+    date_range_error_o: list[str] = ['date outside of range error',
+                                     'error de fecha fuera del rango',
+                                     'datum buiten bereik fout']
 
     # prompts
-    # _o[-1] = num options OR if = 0 then there needs to be a response
-    # _o[-1] = -1 -> can just write ptrs but can also pick option
-    # if _o[-1] = 0 -> then _o[-2] = num options to check range of answer
-    # if _o[-2] = -1 -> any answer is accepted (no always ops available)
-    # if _o[-2] = -2 -> any answer is accepted (always ops available)
-    language_o: list[str] = ['0 = english | 1 = espanol | 2 = nederlands.', '3', '0']
-    name_o: list[str] = ['what\'s your name?', '¿como se llama?', 'hoe heet u?', '-1', '0']
-    looking_at_day_o: list[str] = ['type to add new ptr(s) |\n0 = edit | 1 = previous day | 2 = next day.',
-                                   'escribe para agregar un(os) ptr(s) nuevo |\n0 = editar | 1 = dia anterior | 2 = dia siguente.',
-                                   'type om een nieuwe ptr(s) toe te voegen |\n0 = wijzigen | 1 = vorige dag | 2 = volgende dag.',
-                                   '3', '-1']
+    # _o[-1] = num options (i.e., check range) OR
+    # _o[-1] = 1 -> num options is dynamic (eg #days with finds)
+    # _o[-1] = 0 -> input = output (auto next, can't be empty)
+    # _o[-1] = -1 -> check range BUT auto next and save pos info as cur_in
+    # _o[-1] = -2 -> either in = out (specific pos) OR normal range check
+    # if _o[-1] < 0 -> _o[-2] = num options
+    language_o: list[str | int] = ['0 = english | 1 = spanish | 2 = dutch.',
+                                   '0 = ingles | 1 = espanol | 2 = holandes.',
+                                   '0 = engels | 1 = spaans | 2 = nederlands.',
+                                   3, -1]
+    name_o: list[str | int] = ['what\'s your name?',
+                               '¿como se llama?',
+                               'hoe heet u?',
+                               0]
+    looking_at_day_o: list[str | int] = ['type to add new ptr(s) |\n0 = edit | 1 = previous day | 2 = next day.',
+                                         'escribe para agregar un(os) ptr(s) nuevo(s) |\n0 = editar | 1 = dia '
+                                         'anterior | 2 = dia siguente.',
+                                         'type om een nieuwe ptr(s) toe te voegen |\n0 = wijzigen | 1 = vorige dag | '
+                                         '2 = volgende dag.',
+                                         3, -2]
+    main_menu_o: list[str | int] = ['0 = write | 1 = search | 2 = go to this day | 3 = another random day.',
+                                    '0 = escribir | 1 = buscar | 2 = a este dia | 3 = otro dia aleatario.',
+                                    '0 = schrijven | 1 = zoeken | 2 = naar deze dag | 3 = andere willekeurige dag.',
+                                    4]
+    prompt_search_o: list[str | int] = ['type what you want to search.',
+                                        'entra lo que quiere buscar.',
+                                        'geef wat u wilt zoeken.',
+                                        0]
+    show_search_o: list[str | int] = ['type the number that corresponds to the day you want to see in full.',
+                                      'entra el numero del dia que quieres ver completo.',
+                                      'geef het nummer van de dag die je volledig wil zien.',
+                                      1]
 
-    pos_o_: list[str] = ['0 = write | 1 = search | 2 = another random day.',
-                         '0 = escribir | 1 = buscar | 2 = otro dia aleatario.',
-                         '0 = schrijven | 1 = zoeken | 2 = andere willekeurige dag.',
-                         '3']
-    pos_o_1: list[str] = ['0 = by date | 1 = by word.',
-                          '0 = por fecha | 1 = por palabra.',
-                          '0 = per dag | 1 = per woord.',
-                          '2']
-    pos_o_10: list[str] = ['type date (12abc34 - 56def78) |\n0 = random.',
-                           'entra fecha (12abc34 - 56def78) |\n0 = aleatoria.',
-                           'geef datum (12abc34 - 56def78) |\n0 = willkeurige.',
-                           '1', '-1']
-    pos_o_11: list[str] = ['0 = continuous | 1 = exact | 2 = all | 3 = any.',
-                           '0 = continuo | 1 = exacto | 2 = todas | 3 = cualquier.',
-                           '0 = continu | 1 = precies | 2 = allen | 3 = elke.',
-                           '4']
-    pos_o_110: list[str] = ['type what you want to search.',
-                            'entra lo que quiere buscar.',
-                            'geef wat u wilt zoeken.',
-                            '-1', '0']
-
+    # map positions to outputs
     all_pos_o: dict[str, list[str]] = {
-        '_': pos_o_,
-        '_0': looking_at_day_o,
-        '_1': pos_o_1,
-        '_10': pos_o_10,
-        '_11': pos_o_11}
+        '_': language_o,
+        '__': name_o,
+        '___': main_menu_o,
+        '___0': looking_at_day_o,
+        '___1': prompt_search_o,
+        '___1_': show_search_o,
+        '___1__': looking_at_day_o}
+
+    # map general names of positions to positions
+    all_pos_names_o: dict[str, str] = {
+        'lang': '_',
+        'name': '__',
+        'mm': '___',
+        'lad': '___0',
+        'prompt_search': '___1',
+        'go_to_day': '___2',
+        'rand_day': '___3',
+        'edit': '___00',
+        'prev_day': '___01',
+        'next_day': '___02',
+        'show_search': '___1_',
+        'pick_day': '___1__'}
