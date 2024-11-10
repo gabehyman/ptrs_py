@@ -102,5 +102,6 @@ class Output:
         all_pos_names_o['mm']: main_menu_o,
         all_pos_names_o['lad']: looking_at_day_o,
         all_pos_names_o['prompt_search']: prompt_search_o,
+        all_pos_names_o['edit']: show_search_o,
         all_pos_names_o['show_search']: show_search_o,
         all_pos_names_o['pick_day']: looking_at_day_o}

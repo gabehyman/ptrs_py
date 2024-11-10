@@ -49,14 +49,14 @@ class Search:
             search_word: str = ind_search_words[i]
 
             # exact search
-            if search_word[0] == '\"' and len(search_word) > 1:
+            if search_word[0] == '\"':
                 search_word = search_word[1:]  # truncate to remove "
                 while True:  # iterate until next " or end of word
                     search_clause += search_word
 
-                    # remove last "
-                    if search_word[-1] == '\"':
-                        search_clause = search_clause[:-2]
+                    # remove last " (also account for " then space)
+                    if len(search_word) != 0 and search_word[-1] == '\"':
+                        search_clause = search_clause[:-1]
                         break
 
                     # no space for last word
@@ -79,7 +79,7 @@ class Search:
                     dtm_search = search_word[self.dtm_len:]
 
                     # range search
-                    if '-' in search_word:
+                    if '-' in dtm_search:
                         dtm_range = dtm_search.split('-')
                         start_range: int = -1
 
@@ -177,6 +177,20 @@ class Search:
         is_last_clause_and: bool = False  # keep track of and logic in search
         is_find = False  # track if there are finds on the given day
         for day_i in range(self.start_rel_index, self.end_rel_index + 1):  # only search desired range
+            day: Day = self.sorter.days[self.sorter.rel_index_to_user_days(day_i)]
+
+            # if just searching a date without clauses
+            if not self.search_clauses:
+                # first check if it matches the generic date (if we have)
+                if self.generic_date:
+                    if not day.is_match_generic_date(self.generic_date, self.sorter.is_euro_date):
+                        continue
+
+                # either matches or no generic date so output whole day
+                self.finds_day_is.append(day_i)
+                self.finds_is.append([-1])  # dummy value because we show whole day
+                continue
+
             for clause in self.search_clauses:
                 # clause to left and right both must be finds
                 if clause == '&&':
@@ -187,7 +201,6 @@ class Search:
                     is_last_clause_and = False
                     continue
 
-                day: Day = self.sorter.days[self.sorter.rel_index_to_user_days(day_i)]
                 # if there is a generic date, check if it matches the generic date
                 if self.generic_date:
                     if not day.is_match_generic_date(self.generic_date, self.sorter.is_euro_date):
