@@ -147,7 +147,13 @@ while userer.cur_pos != '':  # end porgram
                 # pass in num_day = -1 when only one day found
                 day = sorter.rel_index_to_user_days(searcher.finds_day_is[0])
                 day_search = sorter.days[day]
-                day_search.print_search_ptrs(userer.lang, -1, searcher.finds_is[0], searcher.search_clauses,
+
+                # only show valid finds for the day
+                search_clauses = searcher.search_clauses
+                if searcher.finds_actual_clauses[0]:
+                    search_clauses = [searcher.search_clauses[i] for i in searcher.finds_actual_clauses[0]]
+
+                day_search.print_search_ptrs(userer.lang, -1, searcher.finds_is[0], search_clauses,
                                              searcher.context, userer.is_euro_date)
 
                 # automatically go to looking at that particular day
@@ -156,7 +162,11 @@ while userer.cur_pos != '':  # end porgram
                 for i in range(searcher.num_days_find):
                     # search each day in finds and print
                     day_search = sorter.days[sorter.rel_index_to_user_days(searcher.finds_day_is[i])]
-                    day_search.print_search_ptrs(userer.lang, i, searcher.finds_is[i], searcher.search_clauses,
+                    # only show valid finds for the day
+                    search_clauses = searcher.search_clauses
+                    if searcher.finds_actual_clauses[0]:
+                        search_clauses = [searcher.search_clauses[i] for i in searcher.finds_actual_clauses[0]]
+                    day_search.print_search_ptrs(userer.lang, i, searcher.finds_is[i], search_clauses,
                                                  searcher.context, userer.is_euro_date)
 
             # update allowed range of input based on #days with finds

@@ -89,7 +89,7 @@ class Day:
 
         print()
 
-    def print_search_ptrs(self, lang: int, num_day: int, find_is: list[int], search_clauses: set, context: int,
+    def print_search_ptrs(self, lang: int, num_day: int, find_is: list[int], search_clauses: list[str], context: int,
                           is_euro_date: bool):
         # print aligned index only if more than one day
         # num_day passed in = -1 if only one day
@@ -184,7 +184,7 @@ class Day:
         return True
 
     @staticmethod
-    def find_all_substring_is(ptr: str, search_clauses: set) -> (list[int], list[int]):
+    def find_all_substring_is(ptr: str, search_clauses: list[str]) -> (list[int], list[int]):
         start_is: set = set()
         end_is: set = set()
 
@@ -267,9 +267,9 @@ class Day:
     @staticmethod
     def date_to_index(date_str: str, is_euro_date: bool, is_range: bool = False) -> list[int]:
         date_obj: datetime
-        d_format = "%d/%m/%Y"
+        d_format = '%d/%m/%Y'
         if not is_euro_date:
-            d_format = "%m/%d/%Y"
+            d_format = '%m/%d/%Y'
 
         # check if three letter date and convert
         date_str = Day.three_letter_date_to_dmy(date_str, is_euro_date)
