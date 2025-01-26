@@ -168,6 +168,7 @@ while userer.cur_pos != '':  # end program
                 # automatically go to looking at that particular day
                 userer.update_cur_pos(Output.all_pos_names_o['lad'])
             else:
+            else:
                 for i in range(searcher.num_days_find):
                     # search each day in finds and print
                     day_search = sorter.days[sorter.rel_index_to_user_days(searcher.finds_day_is[i])]

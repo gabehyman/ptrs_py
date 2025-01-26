@@ -124,6 +124,10 @@ class User:
         self.prev_pos = self.cur_pos
         self.cur_pos = new_pos
 
+    def update_cur_pos(self, new_pos: str):
+        self.prev_pos = self.cur_pos
+        self.cur_pos = new_pos
+
     def input_handler(self, prompt: list[str | int], dyn_num_inputs: int):
         # set num_inputs/_type according to appendicies of prompt
         num_inputs_type = prompt[-1]
@@ -200,6 +204,11 @@ class User:
     def is_valid_range(self, num_inputs: int) -> bool:
         if self.cur_in.isdigit():  # make sure its a number b4 forcing below
             return int(self.cur_in) < num_inputs
+
+            # if input is just number and out of bounds, say out of bounds, dont take answer
+            print(self.get_lang_spec_output(Output.invalid_o))
+            return True
+
 
     # check always ops
     def check_always_op_and_update(self) -> bool:
