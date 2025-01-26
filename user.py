@@ -1,60 +1,81 @@
 import os
+import json
+
 from day import Day
 from output import Output
 
 
 class User:
+    # t = back = -1 | mm = min menu = -2 | tt = end program = -3
     always_ops = ['t', 'mm', 'tt']
 
     def __init__(self):
         self.wd: str = os.path.dirname(os.path.realpath(__file__))
-        self.user_path: str = self.wd + '/user.txt'
-        self.ptrs_path: str = self.wd + '/ptrs.txt'
+        self.user_path: str = self.wd + '/user.json'
+        self.ptr_folder_path: str = self.wd + '/ptrs/'
+        self.ptrs_file_name: str = '/ptrs.txt'
 
+        # asnwered by user
         self.lang: int = 0
+        self.is_euro_date: bool = True
         self.name: str = ''
+        self.user_data = {}
 
+        # track user input and position in program
         self.cur_in: str = ''
         self.cur_pos: str = ''
+        self.prev_pos: str = ''
 
+        # allow for user to go back to previous search result
         self.has_searched: bool = False
 
-        if not (os.path.exists(self.ptrs_path)):
-            self.create_ptrs_file()
+        if not (os.path.isdir(self.ptr_folder_path)):
+            self.create_ptr_folders()
         if not (os.path.exists(self.user_path)):
-            self.cur_pos = "_"  # prompt user info
+            self.update_cur_pos(Output.all_pos_names_o['lang'])  # prompt user info
             self.already_user = False
         else:
-            self.set_user_info()
-            self.cur_pos = '___'
+            self.get_user_info()  # read from file
+            self.update_cur_pos(Output.all_pos_names_o['mm'])
 
             # nice spacing
             Day.print_with_div(self.get_lang_spec_output(Output.welcome_o), self.name, char='*')
             print()
             self.already_user = True
 
-        # TODO: make a switch for this in user.txt
-        # handle european and american date formats
-        self.is_euro_date = True
         self.user_edit_in_prog: bool = False
 
-    def create_ptrs_file(self):
-        with open(self.ptrs_path, 'w') as file:  # create file
-            # create ptrs file with 20 days both in past and future
-            back_forth = 20
-            for i in range(-back_forth, back_forth):
-                day, month, year = Day.get_dates_around_today(i)
-                file.write(f'{day}/{month}/{year} ::  \t\n')
+    def create_ptr_folders(self):
+        # create ptrs file with 20 days both in past and future
+        back_forth = 20
+
+        # create ptrs folder
+        os.makedirs(os.path.dirname(self.ptr_folder_path))
+
+        for i in range(-back_forth, back_forth):
+            rel_index: str = str(Day.get_rel_index_dates_around_today(i))
+            folder_path: str = self.ptr_folder_path + rel_index
+
+            # create path with rel index and ptr file inside
+            os.makedirs(folder_path)
+            with open(folder_path + self.ptrs_file_name, 'w') as file:
+                pass
+
+    def get_user_info(self):
+        with open(self.user_path, 'r') as file:
+            user_data = json.load(file)
+            self.lang = user_data['lang']
+            self.is_euro_date = user_data['is_euro_date']
+            self.name = user_data['name']
 
     def set_user_info(self):
-        with open(self.user_path, 'r') as file:
-            self.lang = int(next(file).strip())
-            self.name = next(file).strip()
-
-    def update_user(self):
+        self.user_data = {
+            "lang": self.lang,
+            "is_euro_date": self.is_euro_date,
+            "name": self.name
+        }
         with open(self.user_path, 'w') as file:  # create user file
-            file.write(str(self.lang) + '\n')
-            file.write(self.name + '\n')
+            json.dump(self.user_data, file, indent=4)
 
         # nice spacing
         Day.print_with_div(self.get_lang_spec_output(Output.welcome_new_o), self.name, char='*')
@@ -67,10 +88,9 @@ class User:
             return True
 
         with open(self.user_path, 'r') as file:
-            lang_t = int(next(file).strip())
-            name_t = next(file).strip()
+            user_data = json.load(file)
 
-            if lang_t != self.lang or name_t != self.name:
+            if user_data != self.user_data:
                 return True
 
         return False
@@ -78,13 +98,13 @@ class User:
     def pos_handler(self, mod: int):
         # go back one (t)
         if mod == -1:
-            self.cur_pos = self.cur_pos[:-1]
+            self.update_cur_pos(self.cur_pos[:-1])
             return
 
         # go back to main menu (mm)
         elif mod == -2:
             if self.already_user:
-                self.cur_pos = Output.all_pos_names_o['mm']
+                self.update_cur_pos(Output.all_pos_names_o['mm'])
                 self.has_searched = False  # clear searcher
                 return
 
@@ -99,6 +119,10 @@ class User:
 
         # handle normally
         self.cur_pos += str(mod)
+
+    def update_cur_pos(self, new_pos: str):
+        self.prev_pos = self.cur_pos
+        self.cur_pos = new_pos
 
     def input_handler(self, prompt: list[str | int], dyn_num_inputs: int):
         # keep type of prompt if actual num_inputs is different (<0)
@@ -166,6 +190,11 @@ class User:
                 else:
                     self.pos_handler(cur_in_i)
                 return True
+
+            # if input is just number and out of bounds, say out of bounds, dont take answer
+            print(self.get_lang_spec_output(Output.invalid_o))
+            return True
+
         return False
 
     # check always ops

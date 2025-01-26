@@ -1,9 +1,9 @@
 from typing import List, Any
 
 from day import Day
-
+from user import User
 import random as rand
-import datetime
+import os
 
 
 def check_date_validity_return(ret, dtm):
@@ -17,23 +17,35 @@ def check_date_validity_return(ret, dtm):
 
 class Sort:
 
-    def __init__(self, ptrs_path, is_euro_date: bool):
-        self.days: list[Day] = []
-        self.has_ptrs = False
-        self.is_euro_date: bool = is_euro_date
+    def __init__(self, userer: User):
+        self.has_ptrs: bool = False
+        self.is_euro_date: bool = userer.is_euro_date
 
-        # does nothing if no file
-        with open(ptrs_path, 'r') as file:
-            for line in file:
-                day: Day = Day(line.strip(), self.is_euro_date)
-                self.days.append(day)
+        # get first rel index and num of days
+        self.first_rel_index = 100000  # ~275 years to start as min
+        self.num_days = 0
 
-                # are there any pointers written
-                if day.has_ptrs():
+        list_of_dirs: list[str] = os.listdir(userer.ptr_folder_path)
+        for day_index in os.listdir(userer.ptr_folder_path):
+            if day_index == '.DS_Store':  # ignore mac os file
+                list_of_dirs.remove(day_index)
+                continue
+            day_index_int = int(day_index)
+            if day_index_int < self.first_rel_index:
+                self.first_rel_index = day_index_int
+
+            self.num_days += 1
+
+        self.days: list[Day] = [None] * self.num_days
+        for day_index in list_of_dirs:
+            day_ptr_path = userer.ptr_folder_path + day_index + userer.ptrs_file_name
+            with open(day_ptr_path, 'r') as file:
+                day: Day = Day(file.readline().strip(), int(day_index))
+                self.days[self.rel_index_to_user_days(day.rel_index)] = day
+
+                if not self.has_ptrs and day.has_ptrs():
                     self.has_ptrs = True
 
-        self.num_days = len(self.days)
-        self.first_rel_index = self.days[0].rel_index
         self.last_rel_index = self.days[self.num_days-1].rel_index
 
     def get_last_day(self):
@@ -46,7 +58,7 @@ class Sort:
                     return i
 
     def get_rand_day(self):
-        # no ptrs have been written
+        # ptrs have been written
         if self.has_ptrs:
             # don't show days with no ptrs written
             while True:
@@ -62,9 +74,10 @@ class Sort:
     def next_day(self, day):
         return (day + 1) % self.num_days
 
-    def rel_index_to_user_days(self, rel_index: int):
-        return rel_index - self.first_rel_index
-
     # go to previous day or wrap around
     def prev_day(self, day):
         return (day - 1 + self.num_days) % self.num_days
+
+    # convert relative index into an array index
+    def rel_index_to_user_days(self, rel_index: int):
+        return rel_index - self.first_rel_index
