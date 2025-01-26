@@ -22,11 +22,8 @@ class Day:
     align_up_to_ptr: int = 4
     align_up_to_day: int = 6
 
-    def __init__(self, ptr: str, rel_index: int):
-        self.ptrs: list[str] = []
-
-        # split into each ptr (csv)
-        self.ptrs: list[str] = ptr.split(',')
+    def __init__(self, ptrs: str, rel_index: int):
+        self.ptrs: list[str] = Day.csv_ptrs_to_list(ptrs)
         self.date_obj = Day.rel_index_to_date(rel_index)
         self.rel_index: int = rel_index  # how many days since aug 24, 1999
 
@@ -182,6 +179,31 @@ class Day:
             if self.year != year:
                 return False
         return True
+
+    def get_all_ptrs_csv(self) -> str:
+        all_ptrs_csv: str = ''
+        if self.has_ptrs():
+            # all ptrs comma seperated, no comma at end
+            for ptr in self.ptrs[:-1]:
+                all_ptrs_csv += ptr
+                all_ptrs_csv += ', '
+            all_ptrs_csv += self.ptrs[-1]
+
+        return all_ptrs_csv
+
+    def rewrite_ptrs(self, ptrs: str, ptr_folder_path, ptrs_file_name, append: bool = False):
+        day_ptr_path = ptr_folder_path + str(self.rel_index) + ptrs_file_name
+        with open(day_ptr_path, 'w') as file:
+            if append:
+                ptrs = self.get_all_ptrs_csv() + ', ' + ptrs
+            file.write(ptrs)
+
+        self.ptrs = Day.csv_ptrs_to_list(ptrs)
+
+    @staticmethod
+    def csv_ptrs_to_list(ptr: str) -> list[str]:
+        ptrs_unstripped: list[str] = ptr.split(',')
+        return [ptr.strip() for ptr in ptrs_unstripped]
 
     @staticmethod
     def find_all_substring_is(ptr: str, search_clauses: list[str]) -> (list[int], list[int]):

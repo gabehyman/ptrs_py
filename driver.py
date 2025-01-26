@@ -1,10 +1,9 @@
-# import pyperclip # copy to clipboard
-
 from user import User
 from output import Output
 from sort import Sort
 from search import Search
 from day import Day
+import pyperclip
 
 # nice spacing at start
 print()
@@ -20,7 +19,7 @@ searcher: Search
 
 day = 0  # which day to show
 dyn_range_inputs = 0  # store a dynamic range of inputs (eg #days with finds)
-while userer.cur_pos != '':  # end porgram
+while userer.cur_pos != '':  # end program
     show_day = False  # will not show day by default
 
     # ----- userer.cur_pos -> tracks user in program ----- #
@@ -109,8 +108,19 @@ while userer.cur_pos != '':  # end porgram
         userer.pos_handler(-2)
 
     # enter edit
-    # elif userer.cur_pos == Output.all_pos_names_o['edit']:
-    # just prompt edit options (don't show)
+    elif userer.cur_pos == Output.all_pos_names_o['edit']:
+        # if we were previously editing, update day with new ptrs
+        if userer.prev_pos == Output.all_pos_names_o['edit']:
+            sorter.days[day].rewrite_ptrs(userer.cur_in, userer.ptr_folder_path, userer.ptrs_file_name)
+            show_day = True
+        else:
+            # if we were previously at looking day and cur_in is in range, we dont want to add that number to pointers
+            if userer.prev_pos == Output.all_pos_names_o['lad']:
+                if not userer.is_valid_range(Output.all_pos_o[Output.all_pos_names_o['lad']][-2]):
+                    sorter.days[day].rewrite_ptrs(userer.cur_in, userer.ptr_folder_path, userer.ptrs_file_name, True)
+                show_day = True
+
+        pyperclip.copy(sorter.days[day].get_all_ptrs_csv())
 
     # show prev day
     elif userer.cur_pos == Output.all_pos_names_o['prev_day']:
@@ -152,7 +162,6 @@ while userer.cur_pos != '':  # end porgram
                 search_clauses = searcher.search_clauses
                 if searcher.finds_actual_clauses[0]:
                     search_clauses = [searcher.search_clauses[i] for i in searcher.finds_actual_clauses[0]]
-
                 day_search.print_search_ptrs(userer.lang, -1, searcher.finds_is[0], search_clauses,
                                              searcher.context, userer.is_euro_date)
 
@@ -162,6 +171,7 @@ while userer.cur_pos != '':  # end porgram
                 for i in range(searcher.num_days_find):
                     # search each day in finds and print
                     day_search = sorter.days[sorter.rel_index_to_user_days(searcher.finds_day_is[i])]
+
                     # only show valid finds for the day
                     search_clauses = searcher.search_clauses
                     if searcher.finds_actual_clauses[0]:

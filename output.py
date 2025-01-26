@@ -37,13 +37,18 @@ class Output:
                                      'error de fecha fuera del rango',
                                      'datum buiten bereik fout']
 
-    # prompts
-    # _o[-1] = num options (i.e., check range) OR
-    # _o[-1] = 1 -> num options is dynamic (eg #days with finds)
-    # _o[-1] = 0 -> input = output (auto next, can't be empty)
-    # _o[-1] = -1 -> check range BUT auto next and save pos info as cur_in
-    # _o[-1] = -2 -> either in = out (specific pos) OR normal range check
-    # if _o[-1] < 0 -> _o[-2] = num options
+    # num_inputs_type = prompt[-1]
+    # num_inputs = prompt[-1]
+    # if num_inputs == 1:
+    #     num_inputs = dyn_num_inputs
+    # elif num_inputs_type < 0:
+    #     num_inputs = prompt[-2]
+
+    # _o[-2] = 1 -> num options is dynamic (eg #days with finds)
+    # _o[-2] = 0 -> input = output (auto next)
+    #   # _o[-1] = -1 -> can't empty
+    # _o[-2] = -1 -> check range BUT auto next and save pos info as cur_in
+    # _o[-2] = -2 -> either in = out (specific pos) OR normal range check
     language_o: list[str | int] = ['0 = english | 1 = spanish | 2 = dutch.',
                                    '0 = ingles | 1 = espanol | 2 = holandes.',
                                    '0 = engels | 1 = spaans | 2 = nederlands.',
@@ -55,7 +60,7 @@ class Output:
     name_o: list[str | int] = ['what\'s your name?',
                                '¿como se llama?',
                                'hoe heet u?',
-                               0]
+                               0, -1]
     looking_at_day_o: list[str | int] = ['type to add new ptr(s) |\n0 = edit | 1 = previous day | 2 = next day.',
                                          'escribe para agregar un(os) ptr(s) nuevo(s) |\n0 = editar | 1 = dia '
                                          'anterior | 2 = dia siguente.',
@@ -69,11 +74,15 @@ class Output:
     prompt_search_o: list[str | int] = ['type what you want to search.',
                                         'entra lo que quiere buscar.',
                                         'geef wat u wilt zoeken.',
-                                        0]
+                                        0, -1]
     show_search_o: list[str | int] = ['type the number that corresponds to the day you want to see in full.',
                                       'entra el numero del dia que quieres ver completo.',
                                       'geef het nummer van de dag die je volledig wil zien.',
                                       1]
+    edit_o: list[str | int] = ['cmd + v to paste all ptrs of the day and edit as you please.',
+                               'cmd + v para pegar todos los ptrs del dia en edita como quiera.',
+                               'cmd + v om alle ptrs van de dag te plakken en wijzig als u wilt.',
+                               0]
 
     # prefix of main menu
     mm_prefix: str = '____'
@@ -102,6 +111,6 @@ class Output:
         all_pos_names_o['mm']: main_menu_o,
         all_pos_names_o['lad']: looking_at_day_o,
         all_pos_names_o['prompt_search']: prompt_search_o,
-        all_pos_names_o['edit']: show_search_o,
+        all_pos_names_o['edit']: edit_o,
         all_pos_names_o['show_search']: show_search_o,
         all_pos_names_o['pick_day']: looking_at_day_o}
