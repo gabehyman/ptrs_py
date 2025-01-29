@@ -195,14 +195,15 @@ class Search:
             i += 1
 
         # remove leading and trailing &&
-        while self.search_clauses[0] == '&&':
-            self.search_clauses.pop(0)
-        while self.search_clauses[-1] == '&&':
-            self.search_clauses.pop()
+        if self.search_clauses:
+            while self.search_clauses[0] == '&&':
+                self.search_clauses.pop(0)
+            while self.search_clauses[-1] == '&&':
+                self.search_clauses.pop()
 
-        for i, clause in enumerate(self.search_clauses):
-            if clause != '&&':
-                self.actual_search_clauses.append(i)
+            for i, clause in enumerate(self.search_clauses):
+                if clause != '&&':
+                    self.actual_search_clauses.append(i)
 
         self.is_valid_search = True
 

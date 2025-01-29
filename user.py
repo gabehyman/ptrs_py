@@ -124,10 +124,6 @@ class User:
         self.prev_pos = self.cur_pos
         self.cur_pos = new_pos
 
-    def update_cur_pos(self, new_pos: str):
-        self.prev_pos = self.cur_pos
-        self.cur_pos = new_pos
-
     def input_handler(self, prompt: list[str | int], dyn_num_inputs: int):
         # set num_inputs/_type according to appendicies of prompt
         num_inputs_type = prompt[-1]
@@ -150,13 +146,13 @@ class User:
 
             # hit enter for last op
             if self.cur_in == '':
-                if num_inputs_type == -1:  # unless we need an answer
+                if num_inputs_type == -1:  # unless we need an actual answer
                     print(self.get_lang_spec_output(Output.no_empty_o))
                     continue
                 elif num_inputs_type == 0:  # save cur_in and don't change position
                     self.prev_pos = self.cur_pos
                     return
-                elif num_inputs_type == 1:  # auto next and save pos info in cur_in
+                elif num_inputs_type == -3:  # auto next and save pos info in cur_in
                     self.auto_next_pos()
                     self.cur_in = str(num_inputs - 1)  # last option
                     return
@@ -167,35 +163,37 @@ class User:
 
             # input = output
             elif num_inputs == 0:
-                # pure in and out stays in same pos
-                if num_inputs_type != 0:
-                    self.auto_next_pos()
-                else:
+                # pure in and out (only 0 appened to prompt) stays in same pos
+                if num_inputs_type == 0:
                     self.prev_pos = self.cur_pos
+                else:
+                    self.auto_next_pos()
                 return
 
             # all remaining ops have range check
             # check if type = -1 to auto next instead of move to actual option
             if self.is_valid_range(num_inputs):
-                if num_inputs_type == -1 or num_inputs_type == 1:
+                if num_inputs_type == -3:
                     self.auto_next_pos()
                 else:
                     self.pos_handler(int(self.cur_in))
                 return
 
-            # out of range and a number
-            elif self.cur_in.isdigit():
+            # out of range number and needs to be number
+            elif self.cur_in.isdigit() and num_inputs_type != -2:
+                print(self.get_lang_spec_output(Output.out_of_range_o))
+                return
+
+            # not a number and needs to be so invalid input
+            if num_inputs_type != -2:
                 print(self.get_lang_spec_output(Output.invalid_o))
                 return
 
             # either in = out (specific pos) OR normal range check
             # and just checked range above so must be in = out
-            if num_inputs_type == -2:
+            else:
                 self.pos_handler(0)  # in = out will be the 0th option
                 return
-
-            # no match, say invalid and re-run
-            print(self.get_lang_spec_output(Output.invalid_o))
 
     # only one prompt/level that could be next
     def auto_next_pos(self):
@@ -204,11 +202,7 @@ class User:
     def is_valid_range(self, num_inputs: int) -> bool:
         if self.cur_in.isdigit():  # make sure its a number b4 forcing below
             return int(self.cur_in) < num_inputs
-
-            # if input is just number and out of bounds, say out of bounds, dont take answer
-            print(self.get_lang_spec_output(Output.invalid_o))
-            return True
-
+        return False
 
     # check always ops
     def check_always_op_and_update(self) -> bool:

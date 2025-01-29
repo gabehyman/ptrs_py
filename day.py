@@ -31,7 +31,6 @@ class Day:
         self.month: int = self.date_obj.month
         self.year: int = self.date_obj.year
         self.day_of_week: int = self.date_obj.weekday()  # 0 = mon 6 = sun
-        self.num_ptrs = len(self.ptrs)
 
     # print date info nicely
     def get_nice_date(self, lang: int, is_euro_date: bool) -> str:
@@ -49,7 +48,7 @@ class Day:
     def print_all_ptrs(self, lang: int, is_euro_date: bool):
         Day.print_with_div(self.get_nice_date(lang, is_euro_date))
 
-        if self.num_ptrs == 0:
+        if len(self.ptrs) == 0:
             # print aligned index
             print(f'{-1:>{self.align_up_to_ptr}}.', end=' ')
             print(f'{Output.empty_o[lang]:<{self.align_up_to_ptr}}')
@@ -114,7 +113,7 @@ class Day:
 
             words = ptr.split()  # split into individual words
             indent = ''  # for nice spacing for non-first lines (the < needs it)
-            for word in words:
+            for j, word in enumerate(words):
                 if (len(no_overflow) + len(word)) > self.max_width:
                     if no_overflow:
                         print(f'{indent}{no_overflow:<{self.align_up_to_ptr}}')
@@ -131,7 +130,7 @@ class Day:
                     no_overflow += word
 
                 # add space if not last word
-                if word != words[-1]:
+                if j != len(words) - 1:
                     no_overflow += ' '
 
             # print rest of ptr if section doesn't overflow
@@ -142,13 +141,13 @@ class Day:
     def get_context_search_indicies(self, find_is: list[int], context: int) -> list[int]:
         # pass in find_is = [-1] if you want all
         if find_is[0] == -1:
-            return range(self.num_ptrs)
+            return range(len(self.ptrs))
 
         context_is: set = set()
         for find_i in find_is:
             # get range of start and end of context
             start = max(0, find_i - context)
-            end = min(self.num_ptrs - 1, find_i + context)
+            end = min(len(self.ptrs) - 1, find_i + context)
 
             # add range to set
             context_is.update(range(start, end + 1))
@@ -180,8 +179,10 @@ class Day:
                 return False
         return True
 
+    # convert all ptrs into a csv string
     def get_all_ptrs_csv(self) -> str:
         all_ptrs_csv: str = ''
+        # return empty str if no ptrs
         if self.has_ptrs():
             # all ptrs comma seperated, no comma at end
             for ptr in self.ptrs[:-1]:
@@ -191,26 +192,39 @@ class Day:
 
         return all_ptrs_csv
 
-    def rewrite_ptrs(self, ptrs: str, ptr_folder_path, ptrs_file_name, append: bool = False):
+    # write the ptrs file and update the program data
+    def write_ptrs(self, ptrs_str: str, ptr_folder_path, ptrs_file_name, append: bool = False):
         day_ptr_path = ptr_folder_path + str(self.rel_index) + ptrs_file_name
+
+        # only append if we already have ptrs
+        if self.has_ptrs() and append:
+            ptrs_str = self.get_all_ptrs_csv() + ', ' + ptrs_str
+
+        # synch program ptrs
+        self.ptrs = Day.csv_ptrs_to_list(ptrs_str)
         with open(day_ptr_path, 'w') as file:
-            if append:
-                ptrs = self.get_all_ptrs_csv() + ', ' + ptrs
-            file.write(ptrs)
+            # ensure nice formatting
+            file.write(self.get_all_ptrs_csv())
 
-        self.ptrs = Day.csv_ptrs_to_list(ptrs)
-
+    # turn csv str ptrs to a list
     @staticmethod
     def csv_ptrs_to_list(ptr: str) -> list[str]:
+        # return empty list if empty ptrs
+        if not ptr:
+            return []
+
+        # no leading/trailing spaces and split at comma
+        # (not comma + space to handle varied input (all backend is comma + space)
         ptrs_unstripped: list[str] = ptr.split(',')
         return [ptr.strip() for ptr in ptrs_unstripped]
 
+    # find start and end indicies of all actual search clauses (to put ** around find)
     @staticmethod
-    def find_all_substring_is(ptr: str, search_clauses: list[str]) -> (list[int], list[int]):
+    def find_all_substring_is(ptr: str, actual_search_clauses: list[str]) -> (list[int], list[int]):
         start_is: set = set()
         end_is: set = set()
 
-        for clause in search_clauses:
+        for clause in actual_search_clauses:
             # start from the beginning
             start_i = ptr.find(clause)
 
@@ -225,10 +239,13 @@ class Day:
         # reverse so we can start at end and not mess up indicies before
         return [sorted(start_is, reverse=True), sorted(end_is, reverse=True)]
 
+    # add ** around finds
     @staticmethod
     def highlight_finds(ptr: str, start_is: list[int], end_is: list[int]) -> str:
-        ptr_list = list(ptr)
+        highlighter = '*'
 
+        # tokenize
+        ptr_list = list(ptr)
         counter_start = 0
         counter_end = 0
         # make sure in bounds of at least one array
@@ -244,14 +261,15 @@ class Day:
             # just do adding here to consolidate
             # pick the bigger (or available) one, insert * and increment
             if insert_start:
-                ptr_list.insert(start_is[counter_start], '*')
+                ptr_list.insert(start_is[counter_start], highlighter)
                 counter_start += 1
             else:
-                ptr_list.insert(end_is[counter_end] + 1, '*')
+                ptr_list.insert(end_is[counter_end] + 1, highlighter)
                 counter_end += 1
 
         return ''.join(ptr_list)
 
+    # print nice divider in console
     @staticmethod
     def print_with_div(output: str, name: str = '', before: bool = True, after: bool = True, char: chr = '-'):
         if name:
@@ -263,15 +281,6 @@ class Day:
         if after:
             print(char * len(output))
 
-    @staticmethod
-    def num_to_letter(num: int) -> str:
-        base = 26  # numm letters in alphabet
-        remainder = num % base
-        div = num // base
-
-        # 'a'= 97 in ascii
-        return chr(remainder + 97) * (div + 1)
-
     # handle euro and american dates
     @staticmethod
     def sort_dmy(dmy: list[int], is_euro_date: bool) -> list[int]:
@@ -281,11 +290,13 @@ class Day:
         # aug24 1999
         return [dmy[1], dmy[0], dmy[2]]
 
+    # convert relative index to a date (eg, 7599 to 13jun20)
     @staticmethod
     def rel_index_to_date(rel_index):
         date = Day.start_of_time + timedelta(days=rel_index)
         return date
 
+    # turn a user inputted date into a 3 valued list date (d/m/y or m/d/y)
     @staticmethod
     def date_to_index(date_str: str, is_euro_date: bool, is_range: bool = False) -> list[int]:
         date_obj: datetime
@@ -382,6 +393,7 @@ class Day:
 
         return [(date_obj - Day.start_of_time).days]
 
+    # convert a three letter date input (24aug99) in to m/d/y (24/8/99)
     @staticmethod
     def three_letter_date_to_dmy(three_letter_date: str, is_euro_month: bool) -> str:
         # not a three letter date so just return original to process
@@ -424,37 +436,9 @@ class Day:
 
         return three_letter_date
 
+    # get the relative index of day about the current day and a given delta
     @staticmethod
     def get_rel_index_dates_around_today(delta) -> int:
         current_date = datetime.now()
         date = current_date + timedelta(days=delta)
         return (date - Day.start_of_time).days
-
-    @staticmethod
-    def make_date(day, month, year):
-        try:
-            return datetime(int(year), int(month), int(day))
-        except ValueError:
-            # if invalid date return date at beginning of time haha
-            return Day.start_of_time
-
-    @staticmethod
-    def get_index(start, end, day, month, year):
-        try:
-            comp_date = datetime(int(year), int(month), int(day))
-            if start.date_obj <= comp_date <= end.date_obj:
-                return (comp_date - start.date_obj).days
-            return -2  # date out of range of ptrs
-        except ValueError:
-            return -3  # invalid date
-
-    # check if input is one of the days of weeks first three letters (english)
-    @staticmethod
-    def is_three_letter_day(usr_day: str) -> int:
-        counter = 0
-        if len(usr_day) == 3:
-            for day in Day.days_of_week[0]:
-                if usr_day == day[:3]:
-                    return counter
-                counter += 1
-        return -1
