@@ -50,6 +50,7 @@ class Output:
     # ^^ input handler code ^^
 
     # _o[-1] = 1 -> num options is dynamic (eg #days with finds)
+    #   # change it to _o[-2] = -3 after setting num_inputs to dyn_range
     # _o[-2 or -1] = 0 -> input = output (auto next)
     #   # _o[-1] = -1 -> can't empty
     # _o[-2] = -2 ->  normal range check OR either in = out
@@ -97,8 +98,7 @@ class Output:
     mm_prefix: str = '____'
 
     # map general names of positions to positions as tree
-    # _ = auto next only option
-    # x = stopping point and always goes back
+    # _ = only possible path forward
     all_pos_names_o: dict[str, str] = {
         'lang': mm_prefix[:-3],
         'date': mm_prefix[:-2],
@@ -108,7 +108,7 @@ class Output:
         'prompt_search': f'{mm_prefix}1',
         'go_to_day': f'{mm_prefix}2',
         'rand_day': f'{mm_prefix}3',
-        'write': f'{mm_prefix}00x',
+        'write': f'{mm_prefix}00_',
         'edit': f'{mm_prefix}00',
         'prev_day': f'{mm_prefix}01',
         'next_day': f'{mm_prefix}02',

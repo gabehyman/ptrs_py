@@ -11,6 +11,7 @@ class Search:
     lvl_len: int = len(lvl)
     ctxt: str = 'ctxt:'
     ctxt_len: int = len(ctxt)
+    and_search: str = '&&'
 
     def __init__(self, sorter: Sort):
         self.sorter: Sort = sorter
@@ -37,6 +38,7 @@ class Search:
         self.finds_is: list[list[int]] = []  # keep track of indicies of ptrs with finds (not a set cuz ordered)
         self.num_days_find: int = 0
         self.num_finds: int = 0
+        self.specific_date = False
 
     # parse search and set all fields of object based on search
     def parse_search(self, words: str):
@@ -93,6 +95,7 @@ class Search:
                         # not an error
                         if start_range >= 0:
                             self.start_rel_index = start_range
+                            self.specific_date = True
                         else:
                             self.is_valid_search = False
                             self.error_code = start_range
@@ -101,6 +104,7 @@ class Search:
                         end_range: int = Day.date_to_index(dtm_range[1], self.sorter.is_euro_date, True)[0]
                         if end_range >= 0:
                             self.end_rel_index = end_range
+                            self.specific_date = True
                         else:
                             self.is_valid_search = False
                             self.error_code = end_range
@@ -127,6 +131,7 @@ class Search:
                                 self.end_rel_index = self.generic_date[0]
                                 # reset generic so we know not to check that
                                 self.generic_date = []
+                                self.specific_date = True
 
                     #  start date must be <= end date, otherwise invalid
                     if self.start_rel_index > self.end_rel_index:
@@ -181,14 +186,14 @@ class Search:
 
             if add_search_clause:
                 # no repeats except for &&
-                if search_clause == '&&':
+                if search_clause == Search.and_search:
                     if not last_clause_dup:  # don't add && if word before was a duplicate
                         self.search_clauses.append(search_clause)
                 elif search_clause not in self.search_clauses:  # add and mark last as not a dup
                     self.search_clauses.append(search_clause)
                     last_clause_dup = False
                 elif search_clause in self.search_clauses:  # remove &&s before duplicate
-                    while self.search_clauses[-1] == '&&':
+                    while self.search_clauses[-1] == Search.and_search:
                         self.search_clauses.pop()
                     last_clause_dup = True
 
@@ -196,13 +201,13 @@ class Search:
 
         # remove leading and trailing &&
         if self.search_clauses:
-            while self.search_clauses[0] == '&&':
+            while self.search_clauses[0] == Search.and_search:
                 self.search_clauses.pop(0)
-            while self.search_clauses[-1] == '&&':
+            while self.search_clauses[-1] == Search.and_search:
                 self.search_clauses.pop()
 
             for i, clause in enumerate(self.search_clauses):
-                if clause != '&&':
+                if clause != Search.and_search:
                     self.actual_search_clauses.append(i)
 
         self.is_valid_search = True
@@ -212,17 +217,23 @@ class Search:
         for day_i in range(self.start_rel_index, self.end_rel_index + 1):  # only search desired range
             day: Day = self.sorter.days[self.sorter.rel_index_to_user_days(day_i)]
 
-            # if just searching a date without clauses
-            if not self.search_clauses:
-                # first check if it matches the generic date (if we have)
-                if self.generic_date:
-                    if not day.is_match_generic_date(self.generic_date, self.sorter.is_euro_date):
+            # if just searching a date without actual clauses
+            if not self.actual_search_clauses:
+                # first check if we have a generic date or specific date (for which we want to show whole day)
+                if self.generic_date or self.specific_date:
+                    # if we have neither a specific date nor a match we skip
+                    if (not self.specific_date and
+                            not day.is_match_generic_date(self.generic_date, self.sorter.is_euro_date)):
                         continue
 
-                # either matches or no generic date so output whole day
-                self.finds_day_is.append(day_i)
-                self.finds_is.append([-1])  # dummy value because we show whole day
-                continue
+                    # either matches or we have a specific date
+                    self.finds_day_is.append(day_i)
+                    self.finds_is.append([-1])  # dummy value because we show whole day
+                    continue
+
+                # no search clauses or generic or specific date so nothing to search
+                else:
+                    break
 
             is_find: bool = self.do_lvl_search(day, day_i)
 
@@ -237,24 +248,21 @@ class Search:
     def do_lvl_search(self, day: Day, day_i: int) -> bool:
         running_count_and_finds: int = 0  # count number of consecutive finds (to remove previous finds if &&)
         consec_and_clauses: int = 0  # count number of consecutive clauses in && run
-        actaul_search_clauses_day: list[str] = self.actual_search_clauses  # clauses actually found on day
+        actual_search_clauses_day: list[str] = self.actual_search_clauses  # clauses actually found on day
         is_last_clause_and: bool = False  # keep track of and logic in search
         is_last_clause_found: bool = False
         is_find: bool = False  # track if there are finds on the given day
         for i, clause in enumerate(self.search_clauses):
             # clause to left and right both must be finds
-            if clause == '&&':
+            if clause == Search.and_search:
                 is_last_clause_and = True
                 consec_and_clauses += 1
                 continue
 
-                # EXCLUDEE ANDS FROM SEARCH THAT DONT HIT
-                # IE ONLY INCLUDE HITS
-
             if is_last_clause_and:
                 # if last clause before and was not found, remove and skip
                 if not is_last_clause_found:
-                    actaul_search_clauses_day.pop(actaul_search_clauses_day.index(i))
+                    actual_search_clauses_day.pop(actual_search_clauses_day.index(i))
                     # reset as no longer careabout consecutiveness
                     consec_and_clauses = 0
                     is_last_clause_and = False
@@ -316,9 +324,9 @@ class Search:
                     running_count_and_finds = 0
 
                 # if nothing found, remove the clause and all preceding clauses in && run
-                index = actaul_search_clauses_day.index(i)
-                actaul_search_clauses_day = (actaul_search_clauses_day[:max(0, index - consec_and_clauses)] +
-                                             actaul_search_clauses_day[index + 1:])
+                index = actual_search_clauses_day.index(i)
+                actual_search_clauses_day = (actual_search_clauses_day[:max(0, index - consec_and_clauses)] +
+                                             actual_search_clauses_day[index + 1:])
                 consec_and_clauses = 0  # reset as no longer careabout consecutiveness
 
                 # reset back to 0 because last not found
@@ -327,9 +335,8 @@ class Search:
                 # last clause no longer &&
                 is_last_clause_and = False
 
-        # only search valid finds
-        if is_find:
-            self.finds_actual_clauses.append(actaul_search_clauses_day)
+        # add actaul finds for the given day
+        self.finds_actual_clauses.append(actual_search_clauses_day)
 
         return is_find
 

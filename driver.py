@@ -190,22 +190,25 @@ while userer.cur_pos != '':  # end program
         # if we have finds (if invalid search, no finds)
         if searcher.finds_day_is:
             if len(searcher.finds_day_is) == 1:
-                # pass in num_day = -1 when only one day found
                 day = sorter.rel_index_to_user_days(searcher.finds_day_is[0])
                 day_search = sorter.days[day]
 
-                # only show valid finds for the day
-                search_clauses = searcher.search_clauses
-                if search_clauses and searcher.finds_actual_clauses[0]:
-                    search_clauses = [searcher.search_clauses[i] for i in searcher.finds_actual_clauses[0]]
-                day_search.print_search_ptrs(userer.lang, -1, searcher.finds_is[0], search_clauses,
-                                             searcher.context, userer.is_euro_date)
+                # if we have search clauses
+                if searcher.finds_actual_clauses:
+                    # only show valid finds for the day
+                    day_search.print_search_ptrs(userer.lang, -1, searcher.finds_is[0], searcher.finds_actual_clauses[0],
+                                                 searcher.context, userer.is_euro_date)
+                # just show all ptrs
+                else:
+                    day_search.print_all_ptrs(userer.lang, userer.is_euro_date)
 
                 # automatically go to looking at that particular day
                 userer.update_cur_pos(Output.all_pos_names_o['lad'])
             else:
+                # only show searches if we have finds or a generic date
+                # (otherwise just a search with lvl: or ctxt: which dont make sense to show)
                 for i in range(searcher.num_days_find):
-                    # search each day in finds and print
+                    # get each day in finds
                     day_search = sorter.days[sorter.rel_index_to_user_days(searcher.finds_day_is[i])]
 
                     # only show valid finds for the day
@@ -215,8 +218,9 @@ while userer.cur_pos != '':  # end program
                     day_search.print_search_ptrs(userer.lang, i, searcher.finds_is[i], search_clauses,
                                                  searcher.context, userer.is_euro_date)
 
-            # update allowed range of input based on #days with finds
-            dyn_range_inputs = searcher.num_days_find
+                # update allowed range of input based on #days with finds
+                dyn_range_inputs = searcher.num_days_find
+
             userer.has_searched = True  # mark that we've searched
 
         elif searcher.is_valid_search:  # valid search with no finds

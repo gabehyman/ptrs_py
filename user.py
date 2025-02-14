@@ -120,16 +120,19 @@ class User:
         # handle normally
         self.update_cur_pos(self.cur_pos + str(mod))
 
+    # update cur_pos and prev_pos
     def update_cur_pos(self, new_pos: str):
         self.prev_pos = self.cur_pos
         self.cur_pos = new_pos
 
+    # handle all user inputs based on prompts in output
     def input_handler(self, prompt: list[str | int], dyn_num_inputs: int):
         # set num_inputs/_type according to appendicies of prompt
         num_inputs_type = prompt[-1]
         num_inputs = prompt[-1]
         if num_inputs == 1:
             num_inputs = dyn_num_inputs
+            num_inputs_type = -3  # change to auto next and save as cur_in
         elif num_inputs_type < 0:
             num_inputs = prompt[-2]
 
@@ -157,13 +160,13 @@ class User:
                     self.cur_in = str(num_inputs - 1)  # last option
                     return
 
-                # handle normal case OR where they can check range + in = out
+                # handle empty input as last option
                 self.pos_handler(num_inputs - 1)
                 return
 
             # input = output
             elif num_inputs == 0:
-                # pure in and out (only 0 appened to prompt) stays in same pos
+                # pure in and out (only 0 appenedged to prompt) stays in same pos
                 if num_inputs_type == 0:
                     self.prev_pos = self.cur_pos
                 else:
@@ -199,12 +202,13 @@ class User:
     def auto_next_pos(self):
         self.update_cur_pos(self.cur_pos + '_')
 
+    # check whether input is in range
     def is_valid_range(self, num_inputs: int) -> bool:
         if self.cur_in.isdigit():  # make sure its a number b4 forcing below
             return int(self.cur_in) < num_inputs
         return False
 
-    # check always ops
+    # check always ops and move pos if need be
     def check_always_op_and_update(self) -> bool:
         for i in range(len(self.always_ops)):
             if self.cur_in == self.always_ops[i]:
@@ -214,13 +218,6 @@ class User:
         # not an always op
         return False
 
+    # get output specific to user lange
     def get_lang_spec_output(self, output_all):
         return output_all[self.lang]
-
-    def search_error_addendum(self, search_params) -> str:
-        if search_params[0] == '-1':
-            return self.get_lang_spec_output(Output.syntax_error_o) + search_params[1]
-        elif search_params[0] == '-2':
-            return self.get_lang_spec_output(Output.date_range_error_o)
-        elif search_params[0] == '-3':
-            return self.get_lang_spec_output(Output.date_range_error_o)

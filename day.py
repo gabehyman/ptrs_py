@@ -200,7 +200,7 @@ class Day:
         if self.has_ptrs() and append:
             ptrs_str = self.get_all_ptrs_csv() + ', ' + ptrs_str
 
-        # synch program ptrs
+        # synch program ptr
         self.ptrs = Day.csv_ptrs_to_list(ptrs_str)
         with open(day_ptr_path, 'w') as file:
             # ensure nice formatting
@@ -319,6 +319,8 @@ class Day:
                 if is_range:
                     return [-2]
                 else:
+                    # if '/' not in date_str:
+                    #     return [-2]
                     dmy = date_str.split('/')
                     if len(dmy) != 3:
                         return [-2]
@@ -424,7 +426,7 @@ class Day:
                 month = str(i + 1)
                 break
 
-        if month != 0:
+        if month:
             if start_i:
                 day = three_letter_date[0:start_i]
             if end_i != date_len:
