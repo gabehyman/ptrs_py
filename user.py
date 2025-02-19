@@ -7,7 +7,7 @@ from output import Output
 
 class User:
     # t = back = -1 | mm = min menu = -2 | tt = end program = -3
-    always_ops = ['t', 'mm', 'tt']
+    always_ops: list[str] = ['t', 'mm', 'tt']
 
     def __init__(self):
         self.wd: str = os.path.dirname(os.path.realpath(__file__))
@@ -15,7 +15,7 @@ class User:
         self.ptr_folder_path: str = self.wd + '/ptrs/'
         self.ptrs_file_name: str = '/ptrs.txt'
 
-        # asnwered by user
+        # answered by user
         self.lang: int = 0
         self.is_euro_date: bool = True
         self.name: str = ''
@@ -47,12 +47,12 @@ class User:
 
     def create_ptr_folders(self):
         # create ptrs file with 20 days both in past and future
-        back_forth = 20
+        num_days_past: int = 20
 
         # create ptrs folder
         os.makedirs(os.path.dirname(self.ptr_folder_path))
 
-        for i in range(-back_forth, back_forth):
+        for i in range(-num_days_past, 1):
             rel_index: str = str(Day.get_rel_index_dates_around_today(i))
             folder_path: str = self.ptr_folder_path + rel_index
 
@@ -70,9 +70,9 @@ class User:
 
     def set_user_info(self):
         self.user_data = {
-            "lang": self.lang,
-            "is_euro_date": self.is_euro_date,
-            "name": self.name
+            'lang': self.lang,
+            'is_euro_date': self.is_euro_date,
+            'name': self.name
         }
         with open(self.user_path, 'w') as file:  # create user file
             json.dump(self.user_data, file, indent=4)
@@ -127,7 +127,7 @@ class User:
 
     # handle all user inputs based on prompts in output
     def input_handler(self, prompt: list[str | int], dyn_num_inputs: int):
-        # set num_inputs/_type according to appendicies of prompt
+        # set num_inputs/_type according to appendices of prompt
         num_inputs_type = prompt[-1]
         num_inputs = prompt[-1]
         if num_inputs == 1:

@@ -1,6 +1,7 @@
 from day import Day
 from user import User
 import random as rand
+import hashlib
 import os
 
 
@@ -110,3 +111,76 @@ class Sort:
     # convert user index to relative index
     def user_days_to_rel_index(self, user_day: int):
         return user_day + self.first_rel_index
+
+    def folder_to_ptrs_file(self, ptrs_file_path: str, lang: int):
+        with open(ptrs_file_path, 'w') as file:
+            for day in self.days:
+                date_str: str = f'({day.days_of_week[lang][day.day_of_week]}) {day.day} {day.months[lang][day.month-1]}, {day.year} ::  \t'
+                file.write(date_str + day.get_all_ptrs_csv() + '\n')
+
+    @staticmethod
+    def ptrs_file_to_folder(ptrs_file_path: str, ptrs_folders_path: str, months: list[list[str]], lang:int, is_euro_date: bool):
+        # make ptrs folder
+        os.makedirs(ptrs_folders_path)
+        with open(ptrs_file_path, 'r') as file:
+            for line in file:
+                line_ind = line.split()
+
+                # get parts of date
+                day = line_ind[0]
+                line_ind.pop(0)
+
+                month_s = line_ind[0]
+                line_ind.pop(0)
+                month = 0
+
+                for i in range(len(months[lang])):
+                    if month_s[:-1] == months[lang][i]:
+                        month = i + 1
+                        break
+
+                year = line_ind[0]
+                line_ind.pop(0)
+                line_ind.pop(0)
+
+                rel_index = Day.date_to_index(f'{day}/{month}/{year}', is_euro_date)
+
+                day_path: str = ptrs_folders_path + str(rel_index[0])
+                os.makedirs(day_path)
+
+                print()
+                print(f'writing {day} {months[2][month - 1]}, {year}...')
+
+                with open(day_path + '/ptrs.txt', 'w') as file_day:
+                    file_day.write(' '.join(line_ind) + '\n')
+
+    @staticmethod
+    def get_file_sha1_64bits(filepath: str) -> int:
+        sha1 = hashlib.sha1()
+        with open(filepath, 'rb') as f:
+            # read the file in chunks to avoid memory issues with large files
+            for chunk in iter(lambda: f.read(4096), b""):
+                sha1.update(chunk)
+
+        # take the first 8 bytes (64 bits)
+        full_hash = sha1.digest()
+        hash_64_bit = int.from_bytes(full_hash[:8], byteorder='big')
+        return hash_64_bit
+
+    @staticmethod
+    def get_directory_shasum(directory_path) -> int:
+        shasum = 0
+        for root, dirs, files in os.walk(directory_path):
+            # skip hidden dirs/files like .git, .DS_Store, etc.
+            dirs[:] = [d for d in dirs if not d.startswith('.')]
+            files = [f for f in files if not f.startswith('.')]
+
+            for file in files:
+                filepath = os.path.join(root, file)
+
+                print(filepath)
+
+                shasum += Sort.get_file_sha1_64bits(filepath)
+
+        return shasum
+

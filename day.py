@@ -184,7 +184,7 @@ class Day:
         all_ptrs_csv: str = ''
         # return empty str if no ptrs
         if self.has_ptrs():
-            # all ptrs comma seperated, no comma at end
+            # all ptrs comma separated, no comma at end
             for ptr in self.ptrs[:-1]:
                 all_ptrs_csv += ptr
                 all_ptrs_csv += ', '
