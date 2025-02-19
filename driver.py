@@ -1,10 +1,9 @@
-# import pyperclip # copy to clipboard
-
 from user import User
 from output import Output
 from sort import Sort
 from search import Search
 from day import Day
+import pyperclip
 
 # nice spacing at start
 print()
@@ -20,7 +19,7 @@ searcher: Search
 
 day = 0  # which day to show
 dyn_range_inputs = 0  # store a dynamic range of inputs (eg #days with finds)
-while userer.cur_pos != '':  # end porgram
+while userer.cur_pos != '':  # end program
     show_day = False  # will not show day by default
 
     # ----- userer.cur_pos -> tracks user in program ----- #
@@ -37,9 +36,9 @@ while userer.cur_pos != '':  # end porgram
         if userer.cur_in != User.always_ops[0]:
             userer.lang = int(userer.cur_in)
 
-    # get user name
+    # get username
     elif userer.cur_pos == Output.all_pos_names_o['name']:
-        # only update if user editting already in progress (ie coming from '_')
+        # only update if user editing already in progress (ie coming from '_')
         if userer.user_edit_in_prog:
             userer.is_euro_date = bool(int(userer.cur_in))
         else:
@@ -109,19 +108,66 @@ while userer.cur_pos != '':  # end porgram
         userer.pos_handler(-2)
 
     # enter edit
-    # elif userer.cur_pos == Output.all_pos_names_o['edit']:
-    # just prompt edit options (don't show)
+    elif userer.cur_pos == Output.all_pos_names_o['edit']:
+        # if we were previously editing OR cur_in != last value of ['edit'] == '0'
+        # (actually giving a ptr to write not a 0 coming from lad), we write
+        if (userer.prev_pos == Output.all_pos_names_o['edit'] or
+                userer.cur_in != Output.all_pos_names_o['edit'][-1]):
+            # go to write (but don't change prev_pos so we can check in write if we append or not)
+            userer.cur_pos = Output.all_pos_names_o['write']
+
+        # copy csv ptrs to clipboard to make editing easy
+        elif sorter.days[day].has_ptrs():
+            pyperclip.copy(sorter.days[day].get_all_ptrs_csv())
+
+    # handles writing (has to come from edit and will always go back to edit)
+    if userer.cur_pos == Output.all_pos_names_o['write']:
+        sorter.days[day].write_ptrs(userer.cur_in, userer.ptr_folder_path, userer.ptrs_file_name,
+                                    userer.prev_pos == Output.all_pos_names_o['lad'])  # append if from lad
+        userer.update_cur_pos(Output.all_pos_names_o['edit'])
+        show_day = True
 
     # show prev day
     elif userer.cur_pos == Output.all_pos_names_o['prev_day']:
-        day = sorter.prev_day(day)
-        userer.pos_handler(-1)
-        show_day = True
+        day -= 1  # decrement day
+        if day < 0:  # ask if user wants to wrap to end or create new day
+            userer.input_handler(Output.new_day_or_wrap_o, dyn_range_inputs)
+        else:  # not an edge case so day is correctly updated and go back to lad
+            userer.update_cur_pos(Output.all_pos_names_o['lad'])
+            show_day = True
 
     # show next day
     elif userer.cur_pos == Output.all_pos_names_o['next_day']:
+        day += 1  # increase day
+        if day >= len(sorter.days):  # ask if user wants to wrap to start or create new day
+            userer.input_handler(Output.new_day_or_wrap_o, dyn_range_inputs)
+        else:  # not an edge case so day is correctly updated and go back to lad
+            userer.update_cur_pos(Output.all_pos_names_o['lad'])
+            show_day = True
+
+    # creates new prev day
+    if userer.cur_pos == Output.all_pos_names_o['new_prev']:
+        sorter.make_new_days(day, True, userer.ptr_folder_path, userer.ptrs_file_name)
+        userer.update_cur_pos(Output.all_pos_names_o['lad'])
+        day = 0
+        show_day = True
+
+    # creates new next day
+    elif userer.cur_pos == Output.all_pos_names_o['new_next']:
+        sorter.make_new_days(day, False, userer.ptr_folder_path, userer.ptrs_file_name)
+        userer.update_cur_pos(Output.all_pos_names_o['lad'])
+        show_day = True
+
+    # wraps around to start of list of days
+    elif userer.cur_pos == Output.all_pos_names_o['wrap_next']:
         day = sorter.next_day(day)
-        userer.pos_handler(-1)
+        userer.update_cur_pos(Output.all_pos_names_o['lad'])
+        show_day = True
+
+    # wraps around to end of list of days
+    elif userer.cur_pos == Output.all_pos_names_o['wrap_prev']:
+        day = sorter.prev_day(day)
+        userer.update_cur_pos(Output.all_pos_names_o['lad'])
         show_day = True
 
     # enter search
@@ -144,24 +190,27 @@ while userer.cur_pos != '':  # end porgram
         # if we have finds (if invalid search, no finds)
         if searcher.finds_day_is:
             if len(searcher.finds_day_is) == 1:
-                # pass in num_day = -1 when only one day found
                 day = sorter.rel_index_to_user_days(searcher.finds_day_is[0])
                 day_search = sorter.days[day]
 
-                # only show valid finds for the day
-                search_clauses = searcher.search_clauses
-                if searcher.finds_actual_clauses[0]:
-                    search_clauses = [searcher.search_clauses[i] for i in searcher.finds_actual_clauses[0]]
-
-                day_search.print_search_ptrs(userer.lang, -1, searcher.finds_is[0], search_clauses,
-                                             searcher.context, userer.is_euro_date)
+                # if we have search clauses
+                if searcher.finds_actual_clauses:
+                    # only show valid finds for the day
+                    day_search.print_search_ptrs(userer.lang, -1, searcher.finds_is[0], searcher.finds_actual_clauses[0],
+                                                 searcher.context, userer.is_euro_date)
+                # just show all ptrs
+                else:
+                    day_search.print_all_ptrs(userer.lang, userer.is_euro_date)
 
                 # automatically go to looking at that particular day
                 userer.update_cur_pos(Output.all_pos_names_o['lad'])
             else:
+                # only show searches if we have finds or a generic date
+                # (otherwise just a search with lvl: or ctxt: which dont make sense to show)
                 for i in range(searcher.num_days_find):
-                    # search each day in finds and print
+                    # get each day in finds
                     day_search = sorter.days[sorter.rel_index_to_user_days(searcher.finds_day_is[i])]
+
                     # only show valid finds for the day
                     search_clauses = searcher.search_clauses
                     if searcher.finds_actual_clauses[0]:
@@ -169,11 +218,12 @@ while userer.cur_pos != '':  # end porgram
                     day_search.print_search_ptrs(userer.lang, i, searcher.finds_is[i], search_clauses,
                                                  searcher.context, userer.is_euro_date)
 
-            # update allowed range of input based on #days with finds
-            dyn_range_inputs = searcher.num_days_find
+                # update allowed range of input based on #days with finds
+                dyn_range_inputs = searcher.num_days_find
+
             userer.has_searched = True  # mark that we've searched
 
-        elif searcher.is_valid_search:  # no finds
+        elif searcher.is_valid_search:  # valid search with no finds
             userer.pos_handler(-1)
             print(userer.get_lang_spec_output(Output.no_finds_o))
 
