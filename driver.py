@@ -25,8 +25,6 @@ while userer.cur_pos != '':  # end program
     # ----- userer.cur_pos -> tracks user in program ----- #
     # ----- userer.cur_in -> stores users last input ----- #
 
-    sorter.folder_to_ptrs_file('/Users/gabehyman/Downloads/pters_yuh.txt', 2)
-
     # get user lang
     if userer.cur_pos == Output.all_pos_names_o['lang']:
         userer.user_edit_in_prog = True  # user info is being updated
@@ -38,7 +36,7 @@ while userer.cur_pos != '':  # end program
         if userer.cur_in != User.always_ops[0]:
             userer.lang = int(userer.cur_in)
 
-    # get user name
+    # get username
     elif userer.cur_pos == Output.all_pos_names_o['name']:
         # only update if user editing already in progress (ie coming from '_')
         if userer.user_edit_in_prog:
